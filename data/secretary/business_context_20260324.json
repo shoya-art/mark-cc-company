@@ -1,0 +1,33 @@
+{
+  "saved_at": "2026-03-24",
+  "accounts": {
+    "instagram": {
+      "id": "ziro_fukuen_pro",
+      "posts": 780,
+      "followers": 1713,
+      "following": 10,
+      "positioning": "自己肯定感を入口にした復縁訴求"
+    },
+    "tiktok": {
+      "id": "@ziro__fukuen_master",
+      "following": 110,
+      "followers": 4089,
+      "likes": 542000,
+      "positioning": "復縁・男性心理の実践訴求"
+    }
+  },
+  "observations": [
+    "男性心理テーマの投稿は伸びやすい",
+    "自己肯定感テーマは教育・納得形成に向く"
+  ],
+  "links": {
+    "master_sheet": "https://docs.google.com/spreadsheets/d/1QRSsF1pjCAtHl6Uapt9mu9UWIdDbnYmTRf1wFwxKFk8/edit?gid=829080272#gid=829080272",
+    "lp_url": "https://hukuen-seikou-ziro.com/ab/179_lp_001_ins",
+    "lp_metrics_sheet": "https://docs.google.com/spreadsheets/d/1H3nhIJCzgfl9suLkMFhWpRuJDQvqn59x8RsS4gl9PgU/edit?gid=0#gid=0"
+  },
+  "strategy_hypothesis": {
+    "acquisition_hook": "男性心理",
+    "education_axis": "自己肯定感",
+    "conversion_path": "男性心理で獲得 -> 自己肯定感で教育 -> 実践ワークで転換"
+  }
+}

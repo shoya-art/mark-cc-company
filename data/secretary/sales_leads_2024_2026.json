@@ -1,0 +1,105 @@
+{
+  "source": {
+    "provided_by": "user_images",
+    "captured_on": "2026-03-24",
+    "note": "手入力で画像から転記。必要に応じて原本シートで再確認してください。"
+  },
+  "category_definitions": {
+    "fe_main": "FE（ダウンセルも含む）",
+    "fe_split_followup": "FE（分割購入の2回目以降着金）",
+    "fe_resale": "FE（リセール）",
+    "repeat_purchase": "継続購入",
+    "repeat_purchase_split_followup": "継続購入（分割購入の2回目以降着金）",
+    "me_middle_end": "ME（ミドルエンド）",
+    "me_split_followup": "ME（分割購入の2回目以降着金）"
+  },
+  "years": {
+    "2024": {
+      "monthly": [
+        { "month": 1, "lead_count": 223, "total_sales_jpy": 149400 },
+        { "month": 2, "lead_count": 236, "total_sales_jpy": 365200 },
+        { "month": 3, "lead_count": 232, "total_sales_jpy": 166000 },
+        { "month": 4, "lead_count": 284, "total_sales_jpy": 272200 },
+        { "month": 5, "lead_count": 311, "total_sales_jpy": 604200 },
+        { "month": 6, "lead_count": 310, "total_sales_jpy": 365200 },
+        { "month": 7, "lead_count": 257, "total_sales_jpy": 521400 },
+        { "month": 8, "lead_count": 264, "total_sales_jpy": 381800 },
+        { "month": 9, "lead_count": 245, "total_sales_jpy": 265600 },
+        { "month": 10, "lead_count": 191, "total_sales_jpy": 471400 },
+        { "month": 11, "lead_count": 181, "total_sales_jpy": 166000 },
+        { "month": 12, "lead_count": 186, "total_sales_jpy": 199200 }
+      ],
+      "annual_summary": {
+        "lead_count_total": 2920,
+        "sales_total_jpy": 3927600,
+        "sales_composition": {
+          "fe_main": { "amount_jpy": 3386000, "ratio_percent": 86.21 },
+          "fe_split_followup": { "amount_jpy": 232400, "ratio_percent": 5.92 },
+          "fe_resale": { "amount_jpy": 0, "ratio_percent": 0.0 },
+          "repeat_purchase": { "amount_jpy": 235800, "ratio_percent": 6.0 },
+          "repeat_purchase_split_followup": { "amount_jpy": 56400, "ratio_percent": 1.44 },
+          "me_middle_end": { "amount_jpy": 0, "ratio_percent": 0.0 },
+          "me_split_followup": { "amount_jpy": 0, "ratio_percent": 0.0 }
+        }
+      }
+    },
+    "2025": {
+      "monthly": [
+        { "month": 1, "lead_count": 267, "total_sales_jpy": 398400 },
+        { "month": 2, "lead_count": 244, "total_sales_jpy": 338600 },
+        { "month": 3, "lead_count": 219, "total_sales_jpy": 49800 },
+        { "month": 4, "lead_count": 198, "total_sales_jpy": 109400 },
+        { "month": 5, "lead_count": 164, "total_sales_jpy": 159400 },
+        { "month": 6, "lead_count": 151, "total_sales_jpy": 119600 },
+        { "month": 7, "lead_count": 105, "total_sales_jpy": 378600 },
+        { "month": 8, "lead_count": 88, "total_sales_jpy": 169400 },
+        { "month": 9, "lead_count": 77, "total_sales_jpy": 309500 },
+        { "month": 10, "lead_count": 100, "total_sales_jpy": 485700 },
+        { "month": 11, "lead_count": 49, "total_sales_jpy": 656000 },
+        { "month": 12, "lead_count": 36, "total_sales_jpy": 226400 }
+      ],
+      "annual_summary": {
+        "lead_count_total": 1698,
+        "sales_total_jpy": 3400800,
+        "sales_composition": {
+          "fe_main": { "amount_jpy": 2241000, "ratio_percent": 65.9 },
+          "fe_split_followup": { "amount_jpy": 199400, "ratio_percent": 5.86 },
+          "fe_resale": { "amount_jpy": 99600, "ratio_percent": 2.93 },
+          "repeat_purchase": { "amount_jpy": 80800, "ratio_percent": 2.38 },
+          "repeat_purchase_split_followup": { "amount_jpy": 0, "ratio_percent": 0.0 },
+          "me_middle_end": { "amount_jpy": 449800, "ratio_percent": 13.23 },
+          "me_split_followup": { "amount_jpy": 323000, "ratio_percent": 9.5 }
+        }
+      }
+    },
+    "2026": {
+      "monthly": [
+        { "month": 1, "lead_count": 45, "total_sales_jpy": 226400 },
+        { "month": 2, "lead_count": 60, "total_sales_jpy": 535400 },
+        { "month": 3, "lead_count": 44, "total_sales_jpy": 0 },
+        { "month": 4, "lead_count": 0, "total_sales_jpy": 0 },
+        { "month": 5, "lead_count": 0, "total_sales_jpy": 0 },
+        { "month": 6, "lead_count": 0, "total_sales_jpy": 0 },
+        { "month": 7, "lead_count": 0, "total_sales_jpy": 0 },
+        { "month": 8, "lead_count": 0, "total_sales_jpy": 0 },
+        { "month": 9, "lead_count": 0, "total_sales_jpy": 0 },
+        { "month": 10, "lead_count": 0, "total_sales_jpy": 0 },
+        { "month": 11, "lead_count": 0, "total_sales_jpy": 0 },
+        { "month": 12, "lead_count": 0, "total_sales_jpy": 0 }
+      ],
+      "annual_summary": {
+        "lead_count_total": 149,
+        "sales_total_jpy": 761800,
+        "sales_composition": {
+          "fe_main": { "amount_jpy": 99600, "ratio_percent": 13.07 },
+          "fe_split_followup": { "amount_jpy": 52600, "ratio_percent": 6.9 },
+          "fe_resale": { "amount_jpy": 0, "ratio_percent": 0.0 },
+          "repeat_purchase": { "amount_jpy": 60000, "ratio_percent": 7.88 },
+          "repeat_purchase_split_followup": { "amount_jpy": 0, "ratio_percent": 0.0 },
+          "me_middle_end": { "amount_jpy": 429600, "ratio_percent": 56.39 },
+          "me_split_followup": { "amount_jpy": 120000, "ratio_percent": 15.75 }
+        }
+      }
+    }
+  }
+}
