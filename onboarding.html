@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ようこそ | リリー</title>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      background: #fdf5f5;
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 20px;
+    }
+    .container { width: 100%; max-width: 460px; }
+
+    /* Step indicator */
+    .steps {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 36px;
+    }
+    .step-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #f0d0d0;
+      transition: all .3s;
+    }
+    .step-dot.active { background: #e95f5f; width: 24px; border-radius: 4px; }
+
+    /* Cards */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    .screen-icon { font-size: 56px; text-align: center; margin-bottom: 20px; }
+    .screen-title {
+      font-size: 22px;
+      font-weight: 700;
+      text-align: center;
+      color: #222;
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+    .screen-body {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.9;
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .screen-body strong { color: #e95f5f; font-weight: 700; }
+
+    /* Name input screen */
+    .name-field { margin-bottom: 28px; }
+    .name-field label {
+      display: block;
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    .name-field input {
+      width: 100%;
+      padding: 15px 18px;
+      background: #fff;
+      border: 2px solid #f0d0d0;
+      border-radius: 14px;
+      color: #333;
+      font-size: 16px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .2s;
+      -webkit-appearance: none;
+    }
+    .name-field input:focus { border-color: #e95f5f; }
+    .name-field input::placeholder { color: #ccc; }
+
+    /* Buttons */
+    .btn {
+      width: 100%;
+      padding: 17px;
+      background: #e95f5f;
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+      letter-spacing: .5px;
+    }
+    .btn:hover { opacity: .88; }
+    .btn:active { transform: scale(.98); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-outline {
+      background: transparent;
+      border: 2px solid #e95f5f;
+      color: #e95f5f;
+      margin-top: 10px;
+    }
+    .btn-outline:hover { background: #fff0f0; opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="steps" id="steps"></div>
+
+    <!-- Step 0: 名前入力 -->
+    <div class="screen active" id="screen-0">
+      <div class="screen-icon">👋</div>
+      <div class="screen-title">ようこそ、リリーへ</div>
+      <div class="screen-body">
+        あなたのことを呼ぶための<br>お名前（ニックネームでOK）を教えてください
+      </div>
+      <div class="name-field">
+        <label>ニックネーム</label>
+        <input type="text" id="name-input" placeholder="例：あかり" maxlength="20">
+      </div>
+      <button class="btn" id="name-btn" onclick="nextStep()">次へ</button>
+    </div>
+
+    <!-- Step 1: リリーとは -->
+    <div class="screen" id="screen-1">
+      <div class="screen-icon">🌸</div>
+      <div class="screen-title">リリーへようこそ</div>
+      <div class="screen-body">
+        リリーは、<strong>復縁を目指す女性</strong>のための<br>
+        オンライン学習プログラムです。<br><br>
+        動画講義とワークを通じて、<br>
+        自己肯定感を高めながら<br>
+        彼との関係を取り戻していきましょう。
+      </div>
+      <button class="btn" onclick="nextStep()">次へ</button>
+    </div>
+
+    <!-- Step 2: 講義の進め方 -->
+    <div class="screen" id="screen-2">
+      <div class="screen-icon">▶️</div>
+      <div class="screen-title">講義の進め方</div>
+      <div class="screen-body">
+        講義は<strong>1日1本</strong>ずつ順番に解放されます。<br><br>
+        焦らず、毎日少しずつ進めることが<br>
+        最も効果的です。<br><br>
+        翌日になると次の講義が解放されます。
+      </div>
+      <button class="btn" onclick="nextStep()">次へ</button>
+    </div>
+
+    <!-- Step 3: ワークの進め方 -->
+    <div class="screen" id="screen-3">
+      <div class="screen-icon">✏️</div>
+      <div class="screen-title">ワークの進め方</div>
+      <div class="screen-body">
+        ワークは講義に合わせて出題されます。<br><br>
+        答えに正解はありません。<br>
+        <strong>あなたの素直な気持ち</strong>を書いてください。<br><br>
+        回答内容はジローが確認し、<br>
+        個別アドバイスに活かされます。
+      </div>
+      <button class="btn" onclick="nextStep()">次へ</button>
+    </div>
+
+    <!-- Step 4: 日報の説明 -->
+    <div class="screen" id="screen-4">
+      <div class="screen-icon">📝</div>
+      <div class="screen-title">毎日のチェックイン</div>
+      <div class="screen-body">
+        毎日、今日の気分・行動・状態を記録しましょう。<br><br>
+        小さな変化を積み重ねることが、<br>
+        <strong>あなたの成長の証</strong>になります。<br><br>
+        毎日続けることが、復縁への近道です。
+      </div>
+      <button class="btn" id="start-btn" onclick="saveProfile()">はじめる</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script>
+    const { createClient } = window.supabase;
+    const sb = createClient(
+      'https://ejcajjtptbrcwmgzqhjz.supabase.co',
+      'sb_publishable_LF8EU4bFZpegd6wZPXGynQ_j_nkEGdP'
+    );
+
+    const TOTAL_STEPS = 5;
+    let currentStep = 0;
+    let userId = null;
+
+    // 認証チェック
+    (async () => {
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) { window.location.href = 'index.html'; return; }
+      userId = user.id;
+      const { data: profile } = await sb.from('profiles').select('name').eq('id', user.id).single();
+      if (profile && profile.name) { window.location.href = 'dashboard.html'; return; }
+      renderDots();
+    })();
+
+    function renderDots() {
+      const container = document.getElementById('steps');
+      container.innerHTML = '';
+      for (let i = 0; i < TOTAL_STEPS; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'step-dot' + (i === currentStep ? ' active' : '');
+        container.appendChild(dot);
+      }
+    }
+
+    function nextStep() {
+      if (currentStep === 0) {
+        const name = document.getElementById('name-input').value.trim();
+        if (!name) {
+          document.getElementById('name-input').focus();
+          return;
+        }
+      }
+      document.getElementById('screen-' + currentStep).classList.remove('active');
+      currentStep++;
+      document.getElementById('screen-' + currentStep).classList.add('active');
+      renderDots();
+    }
+
+    async function saveProfile() {
+      const name = document.getElementById('name-input').value.trim();
+      if (!name) { document.getElementById('name-input').focus(); return; }
+      const btn = document.getElementById('start-btn');
+      btn.disabled = true;
+      btn.textContent = '保存中...';
+
+      const { error } = await sb.from('profiles').update({
+        goal: 'reconnect',
+        name: name
+      }).eq('id', userId);
+
+      if (error) {
+        alert('保存に失敗しました。もう一度試してください。');
+        btn.disabled = false;
+        btn.textContent = 'はじめる';
+        return;
+      }
+      window.location.href = 'dashboard.html';
+    }
+  </script>
+</body>
+</html>
