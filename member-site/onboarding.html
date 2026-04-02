@@ -235,10 +235,16 @@
       btn.disabled = true;
       btn.textContent = '保存中...';
 
-      const { error } = await sb.from('profiles').update({
+      const { data: { user } } = await sb.auth.getUser();
+      const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
+      const { data: existing } = await sb.from('profiles').select('enrollment_date').eq('id', userId).single();
+      const { error } = await sb.from('profiles').upsert({
+        id: userId,
+        email: user.email,
         goal: 'reconnect',
-        name: name
-      }).eq('id', userId);
+        name: name,
+        enrollment_date: existing?.enrollment_date || today
+      }, { onConflict: 'id' });
 
       if (error) {
         alert('保存に失敗しました。もう一度試してください。');
