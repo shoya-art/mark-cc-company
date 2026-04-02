@@ -137,7 +137,7 @@
 <body>
   <div class="container">
     <div class="logo">
-      <div class="logo-title">Lily</div>
+      <div class="logo-title">Re Relation</div>
       <div class="logo-sub">〜彼とあなたの気持ちを結び直す〜</div>
     </div>
 
@@ -211,7 +211,7 @@
 
       // プロフィール確認・なければ作成
       const { data: profile } = await sb.from('profiles')
-        .select('goal, enrollment_date')
+        .select('name, enrollment_date')
         .eq('id', data.user.id)
         .single();
 
@@ -223,7 +223,7 @@
           enrollment_date: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })()
         });
         window.location.href = 'onboarding.html';
-      } else if (!profile.goal) {
+      } else if (!profile.name) {
         window.location.href = 'onboarding.html';
       } else {
         window.location.href = 'dashboard.html';
@@ -235,13 +235,9 @@
       if (e.key === 'Enter') handleLogin();
     });
 
-    // 既にログイン済みならダッシュボードへ
+    // ページを開いたら必ずログアウト（毎回ログインを強制）
     (async () => {
-      const { data: { user } } = await sb.auth.getUser();
-      if (user) {
-        const { data: profile } = await sb.from('profiles').select('goal').eq('id', user.id).single();
-        window.location.href = (!profile || !profile.goal) ? 'onboarding.html' : 'dashboard.html';
-      }
+      await sb.auth.signOut();
     })();
   </script>
 </body>

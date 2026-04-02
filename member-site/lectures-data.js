@@ -200,7 +200,7 @@ const LECTURES = [
 
   {
     id: "4-9", chapter: "第4章", chapter_title: "自己肯定感をプラスにする",
-    title: "あなたの存在や価値を認める", type: "work", url: null, order: 24,
+    title: "あなたの存在や価値を認める", type: "work", url: null, order: 25,
     workType: "questions",
     prompt: [
       "付き合っていた頃、彼のためにしてあげていたことを思いつく限り書いてください。",
@@ -213,7 +213,7 @@ const LECTURES = [
 
   {
     id: "4-10", chapter: "第4章", chapter_title: "自己肯定感をプラスにする",
-    title: "あなただけの軸を作り上げる", type: "work", url: null, order: 25,
+    title: "あなただけの軸を作り上げる", type: "work", url: null, order: 26,
     workType: "questions",
     prompt: [
       "あなたが人生で一番大切にしている価値観は何ですか？（例：家族、誠実さ、自由、楽しむこと など）",
@@ -223,11 +223,11 @@ const LECTURES = [
     ]
   },
 
-  { id: "4-11", chapter: "第4章", chapter_title: "自己肯定感をプラスにする", title: "彼との正しい距離を知る", type: "video", url: "https://youtu.be/tnx8xlm6ZPY", order: 26 },
+  { id: "4-11", chapter: "第4章", chapter_title: "自己肯定感をプラスにする", title: "彼との正しい距離を知る", type: "video", url: "https://youtu.be/tnx8xlm6ZPY", order: 27 },
 
   {
     id: "4-12", chapter: "第4章", chapter_title: "自己肯定感をプラスにする",
-    title: "彼との関係構築に向けた振り返り", type: "work", url: null, order: 27,
+    title: "彼との関係構築に向けた振り返り", type: "work", url: null, order: 28,
     workType: "questions",
     prompt: [
       "今の彼との関係について、あなたの正直な気持ちを書いてください。（希望・不安・怒り、何でも）",
@@ -236,11 +236,11 @@ const LECTURES = [
     ]
   },
 
-  { id: "4-13", chapter: "第4章", chapter_title: "自己肯定感をプラスにする", title: "彼との理想の未来を描いてみる", type: "video", url: "https://youtu.be/yn-PqJFqW6w", order: 28 },
+  { id: "4-13", chapter: "第4章", chapter_title: "自己肯定感をプラスにする", title: "彼との理想の未来を描いてみる", type: "video", url: "https://youtu.be/yn-PqJFqW6w", order: 29 },
 
   {
     id: "4-14", chapter: "第4章", chapter_title: "自己肯定感をプラスにする",
-    title: "理想の未来をイメージする", type: "work", url: null, order: 29,
+    title: "理想の未来をイメージする", type: "work", url: null, order: 30,
     workType: "questions",
     prompt: [
       "復縁後、彼とどんな日常を過ごしたいですか？できるだけ具体的に描いてみてください。",
@@ -250,11 +250,11 @@ const LECTURES = [
     ]
   },
 
-  { id: "4-15", chapter: "第4章", chapter_title: "自己肯定感をプラスにする", title: "幸せを邪魔する自分を倒す", type: "video", url: "https://youtu.be/TPO_9cKtvz0", order: 30 },
+  { id: "4-15", chapter: "第4章", chapter_title: "自己肯定感をプラスにする", title: "幸せを邪魔する自分を倒す", type: "video", url: "https://youtu.be/TPO_9cKtvz0", order: 31 },
 
   {
     id: "4-16", chapter: "第4章", chapter_title: "自己肯定感をプラスにする",
-    title: "復縁できないと思う自分を肯定する", type: "work", url: null, order: 31,
+    title: "復縁できないと思う自分を肯定する", type: "work", url: null, order: 32,
     workType: "questions",
     prompt: [
       "「復縁できないかもしれない」と感じる時、具体的にどんな不安が浮かびますか？",
@@ -263,11 +263,11 @@ const LECTURES = [
     ]
   },
 
-  { id: "4-17", chapter: "第4章", chapter_title: "自己肯定感をプラスにする", title: "小さな成長を認めてあげる", type: "video", url: "https://youtu.be/UjEcbtjK1z4", order: 32 },
+  { id: "4-17", chapter: "第4章", chapter_title: "自己肯定感をプラスにする", title: "小さな成長を認めてあげる", type: "video", url: "https://youtu.be/UjEcbtjK1z4", order: 33 },
 
   {
     id: "4-18", chapter: "第4章", chapter_title: "自己肯定感をプラスにする",
-    title: "ワークを通した成長を振り返る", type: "work", url: null, order: 33,
+    title: "ワークを通した成長を振り返る", type: "work", url: null, order: 34,
     workType: "questions",
     prompt: [
       "第4章のワーク全体を通して、自分の中で一番変わったと思うことは何ですか？",
@@ -277,12 +277,12 @@ const LECTURES = [
   },
 
   // 第5章：彼との復縁に向けた行動
-  { id: "5-1", chapter: "第5章", chapter_title: "彼との復縁に向けた行動", title: "彼への素直な気持ちをチェック", type: "video", url: "https://youtu.be/V51giqtu_-w", order: 34 },
-  { id: "5-2", chapter: "第5章", chapter_title: "彼との復縁に向けた行動", title: "彼をより理解しよう", type: "video", url: "https://youtu.be/8scwkDTF9-c", order: 35 },
+  { id: "5-1", chapter: "第5章", chapter_title: "彼との復縁に向けた行動", title: "彼への素直な気持ちをチェック", type: "video", url: "https://youtu.be/V51giqtu_-w", order: 35 },
+  { id: "5-2", chapter: "第5章", chapter_title: "彼との復縁に向けた行動", title: "彼をより理解しよう", type: "video", url: "https://youtu.be/8scwkDTF9-c", order: 36 },
 
   {
     id: "5-3", chapter: "第5章", chapter_title: "彼との復縁に向けた行動",
-    title: "彼をより徹底的に理解する", type: "work", url: null, order: 36,
+    title: "彼をより徹底的に理解する", type: "work", url: null, order: 37,
     workType: "questions",
     prompt: [
       "彼の生い立ちや家庭環境で、あなたが知っていることを書いてください。",
@@ -294,11 +294,11 @@ const LECTURES = [
     ]
   },
 
-  { id: "5-6", chapter: "第5章", chapter_title: "彼との復縁に向けた行動", title: "彼と別れた原因分析を行う", type: "video", url: "https://youtu.be/Ta3fpL8sO80", order: 37 },
+  { id: "5-6", chapter: "第5章", chapter_title: "彼との復縁に向けた行動", title: "彼と別れた原因分析を行う", type: "video", url: "https://youtu.be/Ta3fpL8sO80", order: 38 },
 
   {
     id: "5-7", chapter: "第5章", chapter_title: "彼との復縁に向けた行動",
-    title: "別れた原因を改善する", type: "work", url: null, order: 38,
+    title: "別れた原因を改善する", type: "work", url: null, order: 39,
     workType: "questions",
     prompt: [
       "別れた原因を改めて整理してください。（彼側の理由・自分側の理由、両方書いてください）",
@@ -312,7 +312,7 @@ const LECTURES = [
 
   {
     id: "5-8a", chapter: "第5章", chapter_title: "彼との復縁に向けた行動",
-    title: "改善できたか現状チェック", type: "work", url: null, order: 39,
+    title: "改善できたか現状チェック", type: "work", url: null, order: 40,
     workType: "checkbox",
     description: "フラれた原因・別れた原因に対して、今の自分はどれだけ改善できているか確認しましょう。\n当てはまると思う項目にチェックを入れてください。",
     items: [
@@ -334,9 +334,9 @@ const LECTURES = [
     after_question: "チェックできた数と、これからさらに改善したいことを書いてください。"
   },
 
-  { id: "5-8b", chapter: "第5章", chapter_title: "彼との復縁に向けた行動", title: "失敗を許容する", type: "video", url: "https://youtu.be/1o3w7LI7ZQM", order: 40 },
-  { id: "5-9", chapter: "第5章", chapter_title: "彼との復縁に向けた行動", title: "新しい事にどんどん挑戦する", type: "video", url: "https://youtu.be/NneK77R1vzw", order: 41 },
-  { id: "5-10", chapter: "第5章", chapter_title: "彼との復縁に向けた行動", title: "今後に向けて", type: "video", url: "https://youtu.be/4M87xoZX3eo", order: 42 },
+  { id: "5-8b", chapter: "第5章", chapter_title: "彼との復縁に向けた行動", title: "失敗を許容する", type: "video", url: "https://youtu.be/1o3w7LI7ZQM", order: 41 },
+  { id: "5-9", chapter: "第5章", chapter_title: "彼との復縁に向けた行動", title: "新しい事にどんどん挑戦する", type: "video", url: "https://youtu.be/NneK77R1vzw", order: 42 },
+  { id: "5-10", chapter: "第5章", chapter_title: "彼との復縁に向けた行動", title: "今後に向けて", type: "video", url: "https://youtu.be/4M87xoZX3eo", order: 43 },
 ];
 
 // 統計

@@ -451,7 +451,7 @@
       }
 
       const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
-      if (!profile || !profile.goal) { window.location.href = 'onboarding.html'; return; }
+      if (!profile || !profile.name) { window.location.href = 'onboarding.html'; return; }
 
       // 日付・名前・メッセージ
       const name = profile.name || 'さん';
