@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>復縁日記 | リリー</title>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      background: #fdf5f5;
+      color: #333;
+      min-height: 100vh;
+      padding-bottom: 100px;
+    }
+
+    .header {
+      background: #fff;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid #f5e5e5;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .back-btn {
+      width: 36px; height: 36px; background: #fdf5f5; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 18px; color: #e95f5f; border: none; flex-shrink: 0;
+    }
+    .header-info { flex: 1; }
+    .header h1 { font-size: 16px; font-weight: 700; }
+    .header-sub { font-size: 11px; color: #bbb; margin-top: 1px; }
+
+    .content { padding: 20px; max-width: 500px; margin: 0 auto; }
+
+    /* Date nav */
+    .date-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      background: #fff; border-radius: 18px; padding: 14px 18px;
+      margin-bottom: 16px; box-shadow: 0 2px 10px rgba(233,95,95,0.06);
+    }
+    .date-arrow {
+      width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid #f5e5e5;
+      background: #fff; font-size: 16px; color: #e95f5f; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-family: inherit; transition: all .15s;
+    }
+    .date-arrow:hover { background: #fff0f3; border-color: #f5c0c0; }
+    .date-arrow:disabled { color: #ddd; border-color: #f5f5f5; cursor: default; }
+    .date-center { text-align: center; }
+    .date-main { font-size: 18px; font-weight: 700; color: #333; }
+    .date-sub { font-size: 11px; color: #bbb; margin-top: 2px; }
+    .today-chip {
+      display: inline-block; background: #e95f5f; color: #fff;
+      font-size: 10px; font-weight: 700; padding: 2px 10px;
+      border-radius: 10px; margin-left: 6px; vertical-align: middle;
+    }
+
+    /* Write section */
+    .write-card {
+      background: #fff; border-radius: 20px; padding: 20px;
+      box-shadow: 0 3px 14px rgba(233,95,95,0.07); margin-bottom: 16px;
+    }
+
+    /* Mood selection */
+    .mood-label { font-size: 12px; font-weight: 700; color: #bbb; margin-bottom: 12px; letter-spacing: .5px; }
+    .mood-row { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+    .mood-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      padding: 8px 10px; border-radius: 14px; border: 2px solid #f5e5e5;
+      background: #fff; cursor: pointer; font-family: inherit;
+      transition: all .15s; min-width: 58px;
+    }
+    .mood-btn:hover { border-color: #f5c0c0; }
+    .mood-btn.selected { border-color: #e95f5f; background: #fff0f3; }
+    .mood-emoji { font-size: 24px; }
+    .mood-text { font-size: 10px; color: #aaa; font-weight: 700; }
+    .mood-btn.selected .mood-text { color: #e95f5f; }
+
+    /* Textarea */
+    .diary-area {
+      width: 100%;
+      background: #fffbf5;
+      border: 2px solid #f5e5e5;
+      border-radius: 14px;
+      color: #333;
+      font-size: 15px;
+      font-family: inherit;
+      padding: 16px;
+      resize: none;
+      outline: none;
+      line-height: 2;
+      min-height: 220px;
+      transition: border-color .2s;
+    }
+    .diary-area:focus { border-color: #e95f5f; background: #fff; }
+    .diary-area::placeholder { color: #ddd; }
+
+    .char-count { font-size: 11px; color: #ccc; text-align: right; margin-top: 8px; }
+
+    .save-btn {
+      display: block; width: 100%;
+      background: linear-gradient(135deg, #e95f5f, #d44a4a);
+      color: #fff; border: none; border-radius: 14px;
+      padding: 16px; font-size: 15px; font-weight: 700;
+      font-family: inherit; cursor: pointer; margin-top: 16px;
+      transition: opacity .2s;
+    }
+    .save-btn:hover { opacity: .88; }
+    .save-btn:disabled { opacity: .45; }
+
+    .saved-badge {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      background: #e8f5e9; border-radius: 10px; padding: 10px;
+      font-size: 13px; color: #5cb87a; font-weight: 700; margin-top: 12px;
+    }
+
+    /* Past entries */
+    .past-section { margin-top: 4px; }
+    .past-title {
+      font-size: 13px; font-weight: 700; color: #bbb;
+      margin-bottom: 14px; letter-spacing: .5px;
+    }
+
+    .diary-entry {
+      background: #fff; border-radius: 16px; margin-bottom: 10px;
+      box-shadow: 0 2px 10px rgba(233,95,95,0.05); overflow: hidden;
+    }
+    .entry-header {
+      padding: 14px 16px; cursor: pointer; display: flex; align-items: center; gap: 10px;
+      transition: background .15s;
+    }
+    .entry-header:hover { background: #fdf5f5; }
+    .entry-mood-badge {
+      width: 36px; height: 36px; border-radius: 50%; background: #fff0f3;
+      display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+    }
+    .entry-meta { flex: 1; }
+    .entry-date { font-size: 13px; font-weight: 700; color: #333; }
+    .entry-preview { font-size: 12px; color: #aaa; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .entry-arrow { font-size: 16px; color: #f5c0c0; transition: transform .2s; flex-shrink: 0; }
+    .diary-entry.open .entry-arrow { transform: rotate(90deg); }
+
+    .entry-body {
+      display: none; padding: 0 16px 16px;
+      border-top: 1px solid #f5e5e5;
+    }
+    .diary-entry.open .entry-body { display: block; }
+    .entry-content {
+      font-size: 14px; color: #555; line-height: 2;
+      margin-top: 14px; white-space: pre-wrap;
+    }
+
+    .empty-state {
+      text-align: center; padding: 32px 0;
+    }
+    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-text { font-size: 13px; color: #bbb; line-height: 1.7; }
+
+    /* Bottom nav */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: #fff; border-top: 1px solid #f5e5e5;
+      display: grid; grid-template-columns: repeat(5, 1fr);
+      padding: 8px 0 18px; z-index: 10;
+    }
+    .nav-item { text-align: center; padding: 4px; cursor: pointer; color: #ddd; text-decoration: none; transition: color .2s; }
+    .nav-item.active { color: #e95f5f; }
+    .nav-icon { font-size: 20px; }
+    .nav-label { font-size: 9px; margin-top: 2px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <button class="back-btn" onclick="history.back()">←</button>
+    <div class="header-info">
+      <h1>復縁日記</h1>
+      <div class="header-sub" id="header-sub">読み込み中...</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- Date navigation -->
+    <div class="date-nav">
+      <button class="date-arrow" id="prev-btn" onclick="changeDate(-1)">‹</button>
+      <div class="date-center">
+        <div class="date-main" id="date-main"></div>
+        <div class="date-sub" id="date-sub"></div>
+      </div>
+      <button class="date-arrow" id="next-btn" onclick="changeDate(1)">›</button>
+    </div>
+
+    <!-- Write card -->
+    <div class="write-card">
+      <div class="mood-label">今日の気分</div>
+      <div class="mood-row" id="mood-row">
+        <button class="mood-btn" onclick="selectMood(this,'😊')" data-mood="😊"><div class="mood-emoji">😊</div><div class="mood-text">普通</div></button>
+        <button class="mood-btn" onclick="selectMood(this,'💕')" data-mood="💕"><div class="mood-emoji">💕</div><div class="mood-text">ときめき</div></button>
+        <button class="mood-btn" onclick="selectMood(this,'🌸')" data-mood="🌸"><div class="mood-emoji">🌸</div><div class="mood-text">前向き</div></button>
+        <button class="mood-btn" onclick="selectMood(this,'😢')" data-mood="😢"><div class="mood-emoji">😢</div><div class="mood-text">しんどい</div></button>
+        <button class="mood-btn" onclick="selectMood(this,'😤')" data-mood="😤"><div class="mood-emoji">😤</div><div class="mood-text">もやもや</div></button>
+      </div>
+
+      <textarea class="diary-area" id="diary-textarea" rows="10"
+        placeholder="今日の気持ちを自由に書いてね。&#10;誰かに見せるわけじゃないから、思ったことをそのままで。"
+        oninput="updateCharCount()"></textarea>
+      <div class="char-count"><span id="char-count">0</span> 文字</div>
+      <button class="save-btn" id="save-btn" onclick="saveDiary()">保存する</button>
+      <div class="saved-badge" id="saved-badge" style="display:none">✓ 保存済み　更新することもできます</div>
+    </div>
+
+    <!-- Past entries -->
+    <div class="past-section">
+      <div class="past-title">過去の日記</div>
+      <div id="past-list"><div class="empty-state"><div class="empty-icon">🌙</div><div class="empty-text">読み込み中...</div></div></div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <a class="nav-item" href="dashboard.html"><div class="nav-icon">🏠</div><div class="nav-label">ホーム</div></a>
+    <a class="nav-item" href="checkin.html"><div class="nav-icon">✨</div><div class="nav-label">気分</div></a>
+    <a class="nav-item" href="daily_report.html"><div class="nav-icon">📝</div><div class="nav-label">日報</div></a>
+    <a class="nav-item" href="lectures.html"><div class="nav-icon">▶️</div><div class="nav-label">講義</div></a>
+    <a class="nav-item" href="my_works.html"><div class="nav-icon">📚</div><div class="nav-label">ワーク</div></a>
+  </nav>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script>
+    const { createClient } = window.supabase;
+    const sb = createClient(
+      'https://ejcajjtptbrcwmgzqhjz.supabase.co',
+      'sb_publishable_LF8EU4bFZpegd6wZPXGynQ_j_nkEGdP'
+    );
+
+    const DAYS_JA = ['日','月','火','水','木','金','土'];
+    let currentUser = null;
+    let currentDate = new Date();
+    let selectedMood = null;
+    let entries = {};
+
+    function getDateStr(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function isToday(d) {
+      const t = new Date();
+      return getDateStr(d) === getDateStr(t);
+    }
+
+    function updateDateDisplay() {
+      const todayStr = getDateStr(new Date());
+      const curStr = getDateStr(currentDate);
+      const isT = curStr === todayStr;
+
+      document.getElementById('date-main').innerHTML =
+        `${currentDate.getMonth()+1}月${currentDate.getDate()}日（${DAYS_JA[currentDate.getDay()]}）${isT ? '<span class="today-chip">今日</span>' : ''}`;
+      document.getElementById('date-sub').textContent =
+        `${currentDate.getFullYear()}年`;
+
+      // Disable next button if today or future
+      const nextDate = new Date(currentDate); nextDate.setDate(nextDate.getDate() + 1);
+      document.getElementById('next-btn').disabled = nextDate > new Date();
+
+      loadEntryForDate(curStr);
+    }
+
+    function changeDate(delta) {
+      currentDate.setDate(currentDate.getDate() + delta);
+      updateDateDisplay();
+    }
+
+    function selectMood(btn, mood) {
+      document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedMood = mood;
+    }
+
+    function updateCharCount() {
+      const len = document.getElementById('diary-textarea').value.length;
+      document.getElementById('char-count').textContent = len;
+    }
+
+    function loadEntryForDate(dateStr) {
+      const entry = entries[dateStr];
+      const ta = document.getElementById('diary-textarea');
+      const savedBadge = document.getElementById('saved-badge');
+      const saveBtn = document.getElementById('save-btn');
+
+      // Reset mood selection
+      document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+      selectedMood = null;
+
+      if (entry) {
+        ta.value = entry.content;
+        savedBadge.style.display = 'flex';
+        saveBtn.textContent = '更新する';
+        if (entry.mood) {
+          selectedMood = entry.mood;
+          document.querySelectorAll('.mood-btn').forEach(b => {
+            if (b.dataset.mood === entry.mood) b.classList.add('selected');
+          });
+        }
+      } else {
+        ta.value = '';
+        savedBadge.style.display = 'none';
+        saveBtn.textContent = '保存する';
+      }
+      updateCharCount();
+    }
+
+    async function saveDiary() {
+      const content = document.getElementById('diary-textarea').value.trim();
+      if (!content) { alert('日記を書いてください'); return; }
+
+      const saveBtn = document.getElementById('save-btn');
+      saveBtn.disabled = true;
+      saveBtn.textContent = '保存中...';
+
+      const dateStr = getDateStr(currentDate);
+      const { error } = await sb.from('diary_entries').upsert({
+        user_id: currentUser.id,
+        date: dateStr,
+        content,
+        mood: selectedMood,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id,date' });
+
+      if (error) {
+        alert('保存に失敗しました');
+        saveBtn.disabled = false;
+        saveBtn.textContent = '保存する';
+        return;
+      }
+
+      entries[dateStr] = { content, mood: selectedMood };
+      document.getElementById('saved-badge').style.display = 'flex';
+      saveBtn.disabled = false;
+      saveBtn.textContent = '更新する';
+      renderPastList();
+    }
+
+    function toggleEntry(dateStr) {
+      const el = document.getElementById('entry-' + dateStr);
+      if (el) el.classList.toggle('open');
+    }
+
+    function renderPastList() {
+      const list = document.getElementById('past-list');
+      const sorted = Object.entries(entries).sort((a, b) => b[0].localeCompare(a[0]));
+
+      if (sorted.length === 0) {
+        list.innerHTML = `<div class="empty-state"><div class="empty-icon">🌙</div><div class="empty-text">まだ日記がないよ。<br>今日の気持ちを書いてみよう。</div></div>`;
+        return;
+      }
+
+      list.innerHTML = sorted.map(([date, entry]) => {
+        const d = new Date(date + 'T00:00:00');
+        const dateLabel = `${d.getMonth()+1}月${d.getDate()}日（${DAYS_JA[d.getDay()]}）`;
+        const preview = entry.content.slice(0, 40).replace(/\n/g, ' ') + (entry.content.length > 40 ? '…' : '');
+        return `
+          <div class="diary-entry" id="entry-${date}">
+            <div class="entry-header" onclick="toggleEntry('${date}')">
+              <div class="entry-mood-badge">${entry.mood || '🌙'}</div>
+              <div class="entry-meta">
+                <div class="entry-date">${dateLabel}</div>
+                <div class="entry-preview">${preview}</div>
+              </div>
+              <div class="entry-arrow">›</div>
+            </div>
+            <div class="entry-body">
+              <div class="entry-content">${entry.content.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    (async () => {
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) { window.location.href = 'index.html'; return; }
+      currentUser = user;
+
+      const { data: allEntries } = await sb.from('diary_entries')
+        .select('date, content, mood').eq('user_id', user.id).order('date', { ascending: false });
+
+      if (allEntries) {
+        allEntries.forEach(e => { entries[e.date] = { content: e.content, mood: e.mood }; });
+      }
+
+      const count = Object.keys(entries).length;
+      document.getElementById('header-sub').textContent = `${count}件の日記`;
+
+      updateDateDisplay();
+      renderPastList();
+    })();
+  </script>
+</body>
+</html>

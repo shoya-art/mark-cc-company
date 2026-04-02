@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理画面 | リリー</title>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      background: #fdf5f5;
+      color: #333;
+      min-height: 100vh;
+      padding-bottom: 40px;
+    }
+
+    .header {
+      background: #fff;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #f5e5e5;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .back-btn {
+      width: 36px; height: 36px;
+      background: #fdf5f5;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 18px; color: #e95f5f;
+      border: none; flex-shrink: 0;
+    }
+    .header h1 { font-size: 16px; font-weight: 700; }
+    .admin-badge {
+      background: #e95f5f;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 10px;
+    }
+
+    .content { padding: 20px; max-width: 900px; margin: 0 auto; }
+
+    /* Overview */
+    .overview { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    @media (max-width: 600px) { .overview { grid-template-columns: repeat(2, 1fr); } }
+    .ov-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 18px 14px;
+      text-align: center;
+      box-shadow: 0 3px 14px rgba(233,95,95,0.07);
+    }
+    .ov-value { font-size: 30px; font-weight: 700; color: #e95f5f; }
+    .ov-label { font-size: 11px; color: #bbb; margin-top: 5px; }
+
+    /* Section */
+    .section {
+      background: #fff;
+      border-radius: 20px;
+      padding: 22px 20px;
+      margin-bottom: 18px;
+      box-shadow: 0 3px 14px rgba(233,95,95,0.07);
+    }
+    .section-title { font-size: 13px; font-weight: 700; color: #bbb; margin-bottom: 18px; letter-spacing: .5px; }
+
+    /* Goal bars */
+    .goal-bars { display: flex; flex-direction: column; gap: 12px; }
+    .goal-bar-row { display: flex; align-items: center; gap: 10px; }
+    .goal-bar-label { font-size: 13px; width: 160px; flex-shrink: 0; color: #555; }
+    .goal-bar-bg { flex: 1; background: #f5e5e5; border-radius: 4px; height: 8px; }
+    .goal-bar-fill { height: 8px; border-radius: 4px; background: #e95f5f; transition: width .5s; }
+    .goal-bar-count { font-size: 13px; color: #aaa; width: 24px; text-align: right; }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 10px 12px; color: #bbb; border-bottom: 1.5px solid #f5e5e5; white-space: nowrap; font-weight: 700; font-size: 11px; letter-spacing: .5px; }
+    td { padding: 13px 12px; border-bottom: 1px solid #fdf5f5; vertical-align: middle; }
+    tr:hover td { background: #fdf5f5; }
+    .goal-tag {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .goal-reconnect { background: #fff0f3; color: #e95f5f; }
+    .goal-next_love { background: #e8f5e9; color: #5cb87a; }
+    .goal-closure { background: #e8eaf6; color: #7986cb; }
+    .no-data { color: #ccc; font-style: italic; }
+    .detail-btn {
+      background: #fdf5f5;
+      border: 1.5px solid #f5c0c0;
+      color: #e95f5f;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .detail-btn:hover { background: #fff0f3; }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.4);
+      z-index: 100;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 28px 28px 0 0;
+      width: 100%;
+      max-width: 500px;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 8px 0 40px;
+    }
+    .modal-handle { width: 36px; height: 4px; background: #eee; border-radius: 2px; margin: 12px auto 16px; }
+    .modal-header { padding: 0 20px 16px; border-bottom: 1px solid #f5e5e5; display: flex; justify-content: space-between; align-items: center; }
+    .modal-title { font-size: 16px; font-weight: 700; }
+    .modal-close { font-size: 22px; cursor: pointer; color: #ccc; background: none; border: none; }
+    .modal-body { padding: 20px; }
+
+    .checkin-item {
+      background: #fdf5f5;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    .checkin-date { font-size: 11px; color: #bbb; margin-bottom: 8px; font-weight: 700; }
+    .checkin-scores { display: flex; gap: 16px; font-size: 13px; }
+    .checkin-scores span { color: #aaa; }
+    .checkin-scores strong { color: #e95f5f; }
+    .checkin-note { font-size: 12px; color: #999; margin-top: 8px; line-height: 1.6; font-style: italic; }
+    .checkin-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+    .checkin-tag { font-size: 11px; background: #fff0f3; color: #e95f5f; padding: 3px 9px; border-radius: 10px; }
+
+    /* Notice form */
+    .notice-form textarea, .notice-form input[type="text"] {
+      width: 100%; border: 2px solid #f5e5e5; border-radius: 12px;
+      padding: 12px 14px; font-size: 14px; font-family: inherit; color: #333;
+      background: #fdf5f5; outline: none; transition: border-color .2s; margin-bottom: 10px;
+    }
+    .notice-form textarea:focus, .notice-form input:focus { border-color: #e95f5f; background: #fff; }
+    .notice-form textarea { resize: none; line-height: 1.8; }
+    .notice-submit {
+      background: linear-gradient(135deg, #e95f5f, #d44a4a); color: #fff; border: none;
+      border-radius: 12px; padding: 12px 28px; font-size: 14px; font-weight: 700;
+      font-family: inherit; cursor: pointer; transition: opacity .2s;
+    }
+    .notice-submit:hover { opacity: .88; }
+    .notice-submit:disabled { opacity: .45; }
+    .pin-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; font-size: 13px; color: #555; }
+    .pin-toggle input { accent-color: #e95f5f; width: 16px; height: 16px; }
+
+    .notice-list-item {
+      background: #fdf5f5; border-radius: 14px; padding: 14px 16px; margin-bottom: 10px;
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+    }
+    .notice-item-title { font-size: 14px; font-weight: 700; color: #333; margin-bottom: 4px; }
+    .notice-item-body { font-size: 12px; color: #777; line-height: 1.6; }
+    .notice-item-meta { font-size: 11px; color: #bbb; margin-top: 4px; }
+    .notice-delete {
+      background: none; border: 1.5px solid #f5c0c0; color: #e95f5f;
+      padding: 5px 12px; border-radius: 10px; font-size: 11px; font-family: inherit; cursor: pointer; flex-shrink: 0;
+    }
+
+    /* Question memos */
+    .q-item {
+      background: #fdf5f5; border-radius: 14px; padding: 14px 16px; margin-bottom: 10px;
+    }
+    .q-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .q-item-lecture { font-size: 11px; font-weight: 700; color: #e95f5f; }
+    .q-item-name { font-size: 11px; color: #bbb; }
+    .q-item-text { font-size: 13px; color: #444; line-height: 1.7; margin-bottom: 8px; }
+    .q-answered { display: inline-block; background: #e8f5e9; color: #5cb87a; font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 10px; }
+    .q-answer-btn {
+      background: #e95f5f; color: #fff; border: none; border-radius: 10px; padding: 5px 14px;
+      font-size: 11px; font-weight: 700; font-family: inherit; cursor: pointer;
+    }
+
+    #no-access { text-align: center; padding: 80px 20px; }
+    #no-access h2 { font-size: 20px; margin-bottom: 10px; color: #333; }
+    #no-access p { color: #bbb; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <button class="back-btn" onclick="window.location.href='dashboard.html'">←</button>
+      <h1>管理画面</h1>
+      <div class="admin-badge">ADMIN</div>
+    </div>
+  </div>
+
+  <div id="no-access" style="display:none">
+    <h2>アクセス権限がありません</h2>
+    <p>この画面は管理者専用です</p>
+  </div>
+
+  <div class="content" id="admin-content" style="display:none">
+    <div class="overview">
+      <div class="ov-card"><div class="ov-value" id="total-members">0</div><div class="ov-label">総会員数</div></div>
+      <div class="ov-card"><div class="ov-value" id="active-today">0</div><div class="ov-label">今日チェックイン</div></div>
+      <div class="ov-card"><div class="ov-value" id="active-week">0</div><div class="ov-label">今週チェックイン</div></div>
+      <div class="ov-card"><div class="ov-value" id="avg-score">-</div><div class="ov-label">今週平均スコア</div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">ゴール別会員数</div>
+      <div class="goal-bars">
+        <div class="goal-bar-row">
+          <div class="goal-bar-label">💕 復縁したい</div>
+          <div class="goal-bar-bg"><div class="goal-bar-fill" id="bar-reconnect" style="width:0%"></div></div>
+          <div class="goal-bar-count" id="count-reconnect">0</div>
+        </div>
+        <div class="goal-bar-row">
+          <div class="goal-bar-label">🌱 次の恋愛で成功</div>
+          <div class="goal-bar-bg"><div class="goal-bar-fill" id="bar-next_love" style="width:0%;background:#5cb87a"></div></div>
+          <div class="goal-bar-count" id="count-next_love">0</div>
+        </div>
+        <div class="goal-bar-row">
+          <div class="goal-bar-label">🕊️ 納得できる終わり</div>
+          <div class="goal-bar-bg"><div class="goal-bar-fill" id="bar-closure" style="width:0%;background:#7986cb"></div></div>
+          <div class="goal-bar-count" id="count-closure">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- お知らせ投稿 -->
+    <div class="section">
+      <div class="section-title">ジローからのお知らせ</div>
+      <div class="notice-form">
+        <input type="text" id="notice-title-input" placeholder="タイトル（例：今週のポイント）">
+        <textarea id="notice-body-input" rows="4" placeholder="内容を書いてください。メンバー全員のダッシュボードに表示されます。"></textarea>
+        <div class="pin-toggle">
+          <input type="checkbox" id="notice-pin"> <label for="notice-pin">ピン留めする（目立つ位置に表示）</label>
+        </div>
+        <button class="notice-submit" id="notice-submit-btn" onclick="postNotice()">投稿する</button>
+      </div>
+      <div style="margin-top:20px" id="notice-list"></div>
+    </div>
+
+    <!-- 質問メモ（未回答） -->
+    <div class="section" id="qmemo-section" style="display:none">
+      <div class="section-title">未回答の質問メモ <span id="qmemo-count" style="color:#e95f5f"></span></div>
+      <div id="qmemo-list"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">会員一覧</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>名前</th>
+              <th>ゴール</th>
+              <th>登録日</th>
+              <th>チェックイン</th>
+              <th>日報</th>
+              <th>最終記録</th>
+              <th>平均</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="member-table"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modal" onclick="closeModal(event)">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <div class="modal-title" id="modal-title">チェックイン履歴</div>
+        <button class="modal-close" onclick="document.getElementById('modal').classList.remove('open')">✕</button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script>
+    const { createClient } = window.supabase;
+    const sb = createClient(
+      'https://ejcajjtptbrcwmgzqhjz.supabase.co',
+      'sb_publishable_LF8EU4bFZpegd6wZPXGynQ_j_nkEGdP'
+    );
+
+    const ADMIN_EMAIL = 'shoyaaaaaa1127@gmail.com';
+    const GOAL_LABELS = { reconnect: '復縁したい', next_love: '次の恋愛', closure: '納得できる終わり' };
+    const GOAL_CLASSES = { reconnect: 'goal-reconnect', next_love: 'goal-next_love', closure: 'goal-closure' };
+
+    function getDateStr(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function closeModal(e) {
+      if (!e || e.target.id === 'modal') document.getElementById('modal').classList.remove('open');
+    }
+
+    async function postNotice() {
+      const title = document.getElementById('notice-title-input').value.trim();
+      const body = document.getElementById('notice-body-input').value.trim();
+      if (!title || !body) { alert('タイトルと内容を入力してください'); return; }
+
+      const btn = document.getElementById('notice-submit-btn');
+      btn.disabled = true; btn.textContent = '投稿中...';
+
+      const { error } = await sb.from('notices').insert({
+        title, body, is_pinned: document.getElementById('notice-pin').checked
+      });
+      if (error) { alert('投稿に失敗しました'); btn.disabled = false; btn.textContent = '投稿する'; return; }
+
+      document.getElementById('notice-title-input').value = '';
+      document.getElementById('notice-body-input').value = '';
+      document.getElementById('notice-pin').checked = false;
+      btn.disabled = false; btn.textContent = '投稿する';
+      loadNotices();
+    }
+
+    async function deleteNotice(id) {
+      if (!confirm('このお知らせを削除しますか？')) return;
+      await sb.from('notices').delete().eq('id', id);
+      loadNotices();
+    }
+
+    async function loadNotices() {
+      const { data } = await sb.from('notices').select('*').order('created_at', { ascending: false });
+      const list = document.getElementById('notice-list');
+      if (!data || data.length === 0) {
+        list.innerHTML = '<div style="font-size:13px;color:#bbb;text-align:center;padding:12px">投稿済みのお知らせはありません</div>';
+        return;
+      }
+      list.innerHTML = data.map(n => `
+        <div class="notice-list-item">
+          <div style="flex:1">
+            <div class="notice-item-title">${n.is_pinned ? '📌 ' : ''}${n.title}</div>
+            <div class="notice-item-body">${n.body}</div>
+            <div class="notice-item-meta">${n.created_at.slice(0,10)}</div>
+          </div>
+          <button class="notice-delete" onclick="deleteNotice('${n.id}')">削除</button>
+        </div>`).join('');
+    }
+
+    async function markAnswered(memoId) {
+      await sb.from('question_memos').update({ is_answered: true }).eq('id', memoId);
+      loadQuestionMemos(allProfileMap);
+    }
+
+    let allProfileMap = {};
+    async function loadQuestionMemos(profileMap) {
+      allProfileMap = profileMap;
+      const { data: memos } = await sb.from('question_memos').select('*').eq('is_answered', false).order('created_at', { ascending: false });
+      const section = document.getElementById('qmemo-section');
+      if (!memos || memos.length === 0) { section.style.display = 'none'; return; }
+      section.style.display = 'block';
+      document.getElementById('qmemo-count').textContent = `（${memos.length}件）`;
+      document.getElementById('qmemo-list').innerHTML = memos.map(m => {
+        const memberName = profileMap[m.user_id]?.name || '不明';
+        return `<div class="q-item">
+          <div class="q-item-header">
+            <div class="q-item-lecture">講義 ${m.lecture_id}</div>
+            <div class="q-item-name">${memberName}</div>
+          </div>
+          <div class="q-item-text">${m.question}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:11px;color:#bbb">${m.created_at.slice(0,10)}</div>
+            <button class="q-answer-btn" onclick="markAnswered('${m.id}')">回答済みにする</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    async function showMemberDetail(userId, name) {
+      document.getElementById('modal-title').textContent = `${name} のチェックイン履歴`;
+      document.getElementById('modal-body').innerHTML = '<p style="color:#bbb;text-align:center;padding:20px">読み込み中...</p>';
+      document.getElementById('modal').classList.add('open');
+
+      const { data: checkins } = await sb.from('checkins')
+        .select('*').eq('user_id', userId).order('date', { ascending: false }).limit(30);
+
+      if (!checkins || checkins.length === 0) {
+        document.getElementById('modal-body').innerHTML = '<p style="color:#bbb;text-align:center;padding:20px">チェックインデータがありません</p>';
+        return;
+      }
+
+      document.getElementById('modal-body').innerHTML = checkins.map(c => `
+        <div class="checkin-item">
+          <div class="checkin-date">${c.date}</div>
+          <div class="checkin-scores">
+            <span>気分 <strong>${c.mood}</strong></span>
+            <span>行動 <strong>${c.action}</strong></span>
+            <span>前向き <strong>${c.state}</strong></span>
+            <span style="color:#e95f5f">平均 <strong>${((c.mood+c.action+c.state)/3).toFixed(1)}</strong></span>
+          </div>
+          ${c.tags && c.tags.length ? `<div class="checkin-tags">${c.tags.map(t => `<span class="checkin-tag">${t}</span>`).join('')}</div>` : ''}
+          ${c.note ? `<div class="checkin-note">"${c.note}"</div>` : ''}
+        </div>
+      `).join('');
+    }
+
+    (async () => {
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user || user.email !== ADMIN_EMAIL) {
+        document.getElementById('no-access').style.display = 'block';
+        return;
+      }
+
+      document.getElementById('admin-content').style.display = 'block';
+      loadNotices();
+
+      const [profilesRes, checkinsRes, reportsRes] = await Promise.all([
+        sb.from('profiles').select('*').order('created_at', { ascending: false }),
+        sb.from('checkins').select('*'),
+        sb.from('daily_reports').select('user_id, date')
+      ]);
+
+      const profiles = profilesRes.data || [];
+      const profileMap = {};
+      profiles.forEach(p => { profileMap[p.id] = p; });
+      loadQuestionMemos(profileMap);
+      const allCheckins = checkinsRes.data || [];
+      const allReports = reportsRes.data || [];
+
+      const total = profiles.length;
+      document.getElementById('total-members').textContent = total;
+
+      const today = new Date();
+      const todayStr = getDateStr(today);
+      const weekAgo = new Date(today); weekAgo.setDate(weekAgo.getDate() - 6);
+      const weekAgoStr = getDateStr(weekAgo);
+
+      const todayActive = new Set(allCheckins.filter(c => c.date === todayStr).map(c => c.user_id)).size;
+      const weekActive = new Set(allCheckins.filter(c => c.date >= weekAgoStr).map(c => c.user_id)).size;
+      document.getElementById('active-today').textContent = todayActive;
+      document.getElementById('active-week').textContent = weekActive;
+
+      const weekCheckins = allCheckins.filter(c => c.date >= weekAgoStr);
+      if (weekCheckins.length > 0) {
+        const avg = weekCheckins.reduce((s, c) => s + (c.mood + c.action + c.state) / 3, 0) / weekCheckins.length;
+        document.getElementById('avg-score').textContent = avg.toFixed(1);
+      }
+
+      // Goal distribution
+      const goalCounts = { reconnect: 0, next_love: 0, closure: 0 };
+      profiles.forEach(p => { if (p.goal) goalCounts[p.goal]++; });
+      const maxGoal = Math.max(...Object.values(goalCounts), 1);
+      Object.entries(goalCounts).forEach(([goal, count]) => {
+        document.getElementById('count-' + goal).textContent = count;
+        document.getElementById('bar-' + goal).style.width = (count / maxGoal * 100) + '%';
+      });
+
+      // Member table
+      const tbody = document.getElementById('member-table');
+      if (profiles.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="no-data" style="padding:20px;text-align:center">会員がいません</td></tr>';
+        return;
+      }
+
+      // Report counts per user
+      const reportCounts = {};
+      allReports.forEach(r => { reportCounts[r.user_id] = (reportCounts[r.user_id] || 0) + 1; });
+
+      tbody.innerHTML = profiles.map(p => {
+        const memberCheckins = allCheckins.filter(c => c.user_id === p.id);
+        const checkinCount = memberCheckins.length;
+        const lastCheckin = memberCheckins.sort((a, b) => b.date.localeCompare(a.date))[0];
+        const avgScore = checkinCount > 0
+          ? (memberCheckins.reduce((s, c) => s + (c.mood + c.action + c.state) / 3, 0) / checkinCount).toFixed(1)
+          : '-';
+        const regDate = new Date(p.created_at).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
+        const reportCount = reportCounts[p.id] || 0;
+
+        return `
+          <tr>
+            <td>${p.name || '<span class="no-data">未設定</span>'}</td>
+            <td>${p.goal ? `<span class="goal-tag ${GOAL_CLASSES[p.goal]}">${GOAL_LABELS[p.goal]}</span>` : '<span class="no-data">未設定</span>'}</td>
+            <td style="color:#aaa">${regDate}</td>
+            <td style="font-weight:700;color:#e95f5f">${checkinCount}回</td>
+            <td style="font-weight:700;color:#5cb87a">${reportCount}回</td>
+            <td style="color:#aaa">${lastCheckin ? lastCheckin.date : '<span class="no-data">なし</span>'}</td>
+            <td style="font-weight:700;color:#e95f5f">${avgScore}</td>
+            <td><button class="detail-btn" onclick="showMemberDetail('${p.id}','${p.name||'名前なし'}')">詳細</button></td>
+          </tr>
+        `;
+      }).join('');
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ようこそ | リリー</title>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      background: #fdf5f5;
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 20px;
+    }
+    .container { width: 100%; max-width: 460px; }
+
+    /* Step indicator */
+    .steps {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 36px;
+    }
+    .step-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #f0d0d0;
+      transition: all .3s;
+    }
+    .step-dot.active { background: #e95f5f; width: 24px; border-radius: 4px; }
+
+    /* Cards */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    .screen-icon { font-size: 56px; text-align: center; margin-bottom: 20px; }
+    .screen-title {
+      font-size: 22px;
+      font-weight: 700;
+      text-align: center;
+      color: #222;
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+    .screen-body {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.9;
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .screen-body strong { color: #e95f5f; font-weight: 700; }
+
+    /* Name input screen */
+    .name-field { margin-bottom: 28px; }
+    .name-field label {
+      display: block;
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    .name-field input {
+      width: 100%;
+      padding: 15px 18px;
+      background: #fff;
+      border: 2px solid #f0d0d0;
+      border-radius: 14px;
+      color: #333;
+      font-size: 16px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .2s;
+      -webkit-appearance: none;
+    }
+    .name-field input:focus { border-color: #e95f5f; }
+    .name-field input::placeholder { color: #ccc; }
+
+    /* Goal selection */
+    .choices { display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
+    .choice {
+      background: #fff;
+      border: 2px solid #f0d0d0;
+      border-radius: 16px;
+      padding: 20px 18px;
+      cursor: pointer;
+      transition: all .2s;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .choice:hover { border-color: #e95f5f; background: #fff8f8; }
+    .choice.selected { border-color: #e95f5f; background: #fff0f0; }
+    .choice-icon { font-size: 26px; flex-shrink: 0; margin-top: 1px; }
+    .choice-text h3 { font-size: 15px; font-weight: 700; color: #222; margin-bottom: 3px; }
+    .choice-text p { font-size: 12px; color: #999; line-height: 1.6; }
+
+    /* Buttons */
+    .btn {
+      width: 100%;
+      padding: 17px;
+      background: #e95f5f;
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+      letter-spacing: .5px;
+    }
+    .btn:hover { opacity: .88; }
+    .btn:active { transform: scale(.98); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-outline {
+      background: transparent;
+      border: 2px solid #e95f5f;
+      color: #e95f5f;
+      margin-top: 10px;
+    }
+    .btn-outline:hover { background: #fff0f0; opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="steps" id="steps"></div>
+
+    <!-- Step 0: 名前入力 -->
+    <div class="screen active" id="screen-0">
+      <div class="screen-icon">👋</div>
+      <div class="screen-title">ようこそ、リリーへ</div>
+      <div class="screen-body">
+        あなたのことを呼ぶための<br>お名前（ニックネームでOK）を教えてください
+      </div>
+      <div class="name-field">
+        <label>ニックネーム</label>
+        <input type="text" id="name-input" placeholder="例：あかり" maxlength="20">
+      </div>
+      <button class="btn" id="name-btn" onclick="nextStep()">次へ</button>
+    </div>
+
+    <!-- Step 1: リリーとは -->
+    <div class="screen" id="screen-1">
+      <div class="screen-icon">🌸</div>
+      <div class="screen-title">リリーへようこそ</div>
+      <div class="screen-body">
+        リリーは、<strong>復縁を目指す女性</strong>のための<br>
+        オンライン学習プログラムです。<br><br>
+        動画講義とワークを通じて、<br>
+        自己肯定感を高めながら<br>
+        彼との関係を取り戻していきましょう。
+      </div>
+      <button class="btn" onclick="nextStep()">次へ</button>
+    </div>
+
+    <!-- Step 2: 講義の進め方 -->
+    <div class="screen" id="screen-2">
+      <div class="screen-icon">▶️</div>
+      <div class="screen-title">講義の進め方</div>
+      <div class="screen-body">
+        講義は<strong>1日1本</strong>ずつ順番に解放されます。<br><br>
+        焦らず、毎日少しずつ進めることが<br>
+        最も効果的です。<br><br>
+        翌日になると次の講義が解放されます。
+      </div>
+      <button class="btn" onclick="nextStep()">次へ</button>
+    </div>
+
+    <!-- Step 3: ワークの進め方 -->
+    <div class="screen" id="screen-3">
+      <div class="screen-icon">✏️</div>
+      <div class="screen-title">ワークの進め方</div>
+      <div class="screen-body">
+        ワークは講義に合わせて出題されます。<br><br>
+        答えに正解はありません。<br>
+        <strong>あなたの素直な気持ち</strong>を書いてください。<br><br>
+        回答内容はジローが確認し、<br>
+        個別アドバイスに活かされます。
+      </div>
+      <button class="btn" onclick="nextStep()">次へ</button>
+    </div>
+
+    <!-- Step 4: 日報の説明 -->
+    <div class="screen" id="screen-4">
+      <div class="screen-icon">📝</div>
+      <div class="screen-title">毎日のチェックイン</div>
+      <div class="screen-body">
+        毎日、今日の気分・行動・状態を記録しましょう。<br><br>
+        小さな変化を積み重ねることが、<br>
+        <strong>あなたの成長の証</strong>になります。<br><br>
+        毎日続けることが、復縁への近道です。
+      </div>
+      <button class="btn" onclick="nextStep()">ゴール診断へ</button>
+    </div>
+
+    <!-- Step 5: ゴール診断 -->
+    <div class="screen" id="screen-5">
+      <div class="screen-title" style="margin-bottom:8px">あなたの目標を<br>教えてください</div>
+      <div class="screen-body" style="margin-bottom:20px">
+        目標に合わせたサポートをお届けします
+      </div>
+      <div class="choices">
+        <div class="choice" id="choice-reconnect" onclick="selectGoal('reconnect')">
+          <div class="choice-icon">💕</div>
+          <div class="choice-text">
+            <h3>元彼と復縁したい</h3>
+            <p>別れた相手ともう一度やり直したい</p>
+          </div>
+        </div>
+        <div class="choice" id="choice-next_love" onclick="selectGoal('next_love')">
+          <div class="choice-icon">🌱</div>
+          <div class="choice-text">
+            <h3>次の恋愛で失敗したくない</h3>
+            <p>なぜ別れたのか理解して次に活かしたい</p>
+          </div>
+        </div>
+        <div class="choice" id="choice-closure" onclick="selectGoal('closure')">
+          <div class="choice-icon">🕊️</div>
+          <div class="choice-text">
+            <h3>納得できる終わらせ方を知りたい</h3>
+            <p>気持ちを整理して前向きに進みたい</p>
+          </div>
+        </div>
+      </div>
+      <button class="btn" id="goal-btn" onclick="saveGoal()" disabled>この目標で始める</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script>
+    const { createClient } = window.supabase;
+    const sb = createClient(
+      'https://ejcajjtptbrcwmgzqhjz.supabase.co',
+      'sb_publishable_LF8EU4bFZpegd6wZPXGynQ_j_nkEGdP'
+    );
+
+    const TOTAL_STEPS = 6;
+    let currentStep = 0;
+    let selectedGoal = null;
+    let userId = null;
+
+    // 認証チェック
+    (async () => {
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) { window.location.href = 'index.html'; return; }
+      userId = user.id;
+      const { data: profile } = await sb.from('profiles').select('goal, name').eq('id', user.id).single();
+      if (profile && profile.goal) { window.location.href = 'dashboard.html'; return; }
+      // 名前が既にある場合はスキップ
+      if (profile && profile.name) {
+        document.getElementById('name-input').value = profile.name;
+      }
+      renderDots();
+    })();
+
+    function renderDots() {
+      const container = document.getElementById('steps');
+      container.innerHTML = '';
+      for (let i = 0; i < TOTAL_STEPS; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'step-dot' + (i === currentStep ? ' active' : '');
+        container.appendChild(dot);
+      }
+    }
+
+    function nextStep() {
+      if (currentStep === 0) {
+        const name = document.getElementById('name-input').value.trim();
+        if (!name) {
+          document.getElementById('name-input').focus();
+          return;
+        }
+      }
+      document.getElementById('screen-' + currentStep).classList.remove('active');
+      currentStep++;
+      document.getElementById('screen-' + currentStep).classList.add('active');
+      renderDots();
+    }
+
+    function selectGoal(goal) {
+      selectedGoal = goal;
+      document.querySelectorAll('.choice').forEach(el => el.classList.remove('selected'));
+      document.getElementById('choice-' + goal).classList.add('selected');
+      document.getElementById('goal-btn').disabled = false;
+    }
+
+    async function saveGoal() {
+      if (!selectedGoal) return;
+      const btn = document.getElementById('goal-btn');
+      btn.disabled = true;
+      btn.textContent = '保存中...';
+
+      const name = document.getElementById('name-input').value.trim();
+      await sb.from('profiles').update({
+        goal: selectedGoal,
+        name: name,
+        enrollment_date: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })()
+      }).eq('id', userId);
+
+      window.location.href = 'dashboard.html';
+    }
+  </script>
+</body>
+</html>
