@@ -259,37 +259,29 @@
     </div>
 
     <!-- 入会1週間ガイド -->
-    <a class="week-guide" id="week-guide" href="#" style="display:none">
+    <a class="week-guide" id="week-guide" href="lectures.html">
       <div class="week-guide-inner">
-        <div class="week-guide-label" id="guide-label">入会 1 日目のステップ</div>
-        <div class="week-guide-text" id="guide-text"></div>
+        <div class="week-guide-label">講義・ワーク</div>
+        <div class="week-guide-text" id="guide-text">今日の講義・ワークを進めよう</div>
         <div class="week-guide-sub">タップして開く →</div>
       </div>
     </a>
 
 
-    <!-- CTA 2x2 -->
-    <div class="cta-grid">
-      <a class="cta-card" id="checkin-cta" href="checkin.html">
-        <div class="cta-title">気分チェックイン</div>
-        <div class="cta-sub" id="checkin-sub">今の気持ちを記録</div>
-      </a>
-      <a class="cta-card" id="report-cta" href="daily_report.html">
-        <div class="cta-title">日報を書く</div>
-        <div class="cta-sub" id="report-sub">3つの良かったこと</div>
-      </a>
-      <a class="cta-card" href="lectures.html" style="grid-column: span 2;">
-        <div class="cta-title">講義・ワーク</div>
-        <div class="cta-sub" id="lecture-sub">読み込み中...</div>
-        <div class="cta-sub" id="work-sub" style="margin-top:2px"></div>
-      </a>
-    </div>
+    <!-- 幸せ日記 -->
+    <a class="week-guide" href="daily_report.html" id="diary-cta-main">
+      <div class="week-guide-inner">
+        <div class="week-guide-label" id="diary-main-label">幸せ日記</div>
+        <div class="week-guide-text">今日の幸せ日記を書く</div>
+        <div class="week-guide-sub" id="diary-main-sub">3つの良かったことを記録しよう</div>
+      </div>
+    </a>
 
     <!-- 日記・月次レポート -->
     <div class="cta-grid">
-      <a class="cta-card" href="diary.html" id="diary-cta">
+      <a class="cta-card" href="diary.html">
         <div class="cta-title">復縁日記</div>
-        <div class="cta-sub" id="diary-sub">今の気持ちを自由に</div>
+        <div class="cta-sub">今の気持ちを自由に</div>
       </a>
       <a class="cta-card" href="monthly_report.html">
         <div class="cta-title">月次レポート</div>
@@ -448,13 +440,9 @@
       document.getElementById('total-val').textContent = checkins.length;
 
       const todayCheckin = checkins.find(c => c.date === todayStr);
-      if (todayCheckin) {
-        document.getElementById('checkin-cta').classList.add('done');
-        document.getElementById('checkin-sub').innerHTML = '<span class="done-pill">✓ 完了</span>';
-      }
       if (todayReportRes.data) {
-        document.getElementById('report-cta').classList.add('done');
-        document.getElementById('report-sub').innerHTML = '<span class="done-pill">✓ 送信済み</span>';
+        document.getElementById('diary-main-label').textContent = '幸せ日記 ✓';
+        document.getElementById('diary-main-sub').textContent = '今日は記録済みです';
       }
 
       // ストリーク
@@ -496,30 +484,20 @@
       }
 
       // 入会1週間ガイド (Day 1〜7)
-      const DAY_GUIDES = [
-        { label: '入会 1 日目のステップ', text: 'まず第0章の講義を見てみよう', link: 'lectures.html' },
-        { label: '入会 2 日目のステップ', text: '今日の気分をチェックインしてみよう', link: 'checkin.html' },
-        { label: '入会 3 日目のステップ', text: '第1章を見てみよう', link: 'lectures.html' },
-        { label: '入会 4 日目のステップ', text: '日報を書いてみよう', link: 'daily_report.html' },
-        { label: '入会 5 日目のステップ', text: '第2・3章を進めよう', link: 'lectures.html' },
-        { label: '入会 6 日目のステップ', text: '最初のワーク（3-3）に挑戦しよう', link: 'lectures.html' },
-        { label: '入会 7 日目', text: '1週間続けられたね。この調子で進もう', link: 'lectures.html' }
+      // 入会1週間のみ案内テキストを変える
+      const DAY_GUIDE_TEXTS = [
+        'まず第0章の講義を見てみよう',
+        '第1章の講義を進めてみよう',
+        '第1章を進めよう',
+        '第2章に挑戦しよう',
+        '第2・3章を進めよう',
+        '最初のワーク（3-3）に挑戦しよう',
+        '1週間続けられたね。この調子で進もう'
       ];
       if (enrollDays >= 1 && enrollDays <= 7) {
-        const guide = DAY_GUIDES[enrollDays - 1];
-        const guideEl = document.getElementById('week-guide');
-        guideEl.style.display = 'flex';
-        guideEl.href = guide.link;
-        document.getElementById('guide-label').textContent = guide.label;
-        document.getElementById('guide-text').textContent = guide.text;
+        document.getElementById('guide-text').textContent = DAY_GUIDE_TEXTS[enrollDays - 1];
       }
 
-      // 今日の日記チェック
-      const { data: todayDiary } = await sb.from('diary_entries').select('id').eq('user_id', user.id).eq('date', todayStr).single();
-      if (todayDiary) {
-        document.getElementById('diary-cta').classList.add('done');
-        document.getElementById('diary-sub').innerHTML = '<span class="done-pill">✓ 書いた</span>';
-      }
 
 
       // 章ロードマップ
