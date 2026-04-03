@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ホーム | リリー</title>
+  <title>ホーム | Re Relation</title>
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <style>
@@ -13,7 +13,7 @@
       background: #fdf5f5;
       color: #333;
       min-height: 100vh;
-      padding-bottom: 90px;
+      padding-bottom: 20px;
     }
 
     /* Header */
@@ -206,22 +206,11 @@
     .week-guide-text { font-size: 14px; font-weight: 700; color: #333; }
     .week-guide-sub { font-size: 11px; color: #aaa; margin-top: 2px; }
 
-    /* Bottom nav */
-    .bottom-nav {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      background: #fff; border-top: 1px solid #f5e5e5;
-      display: grid; grid-template-columns: repeat(5, 1fr);
-      padding: 8px 0 18px; z-index: 10;
-    }
-    .nav-item { text-align: center; padding: 4px; cursor: pointer; color: #ddd; text-decoration: none; transition: color .2s; }
-    .nav-item.active { color: #e95f5f; }
-    .nav-icon { font-size: 20px; }
-    .nav-label { font-size: 9px; margin-top: 2px; }
   </style>
 </head>
 <body>
   <div class="header">
-    <div class="header-logo">Lily</div>
+    <div class="header-logo">Re Relation</div>
     <div class="header-right">
       <span id="admin-link" style="display:none">
         <button class="admin-btn" onclick="window.location.href='admin.html'">管理</button>
@@ -233,7 +222,6 @@
   <div class="content">
     <!-- ジローからのお知らせ -->
     <div class="notice-card" id="notice-card" style="display:none">
-      <div class="notice-icon">💌</div>
       <div style="flex:1">
         <div class="notice-label">ジローより</div>
         <div class="notice-title" id="notice-title"></div>
@@ -249,7 +237,6 @@
       </div>
       <div class="welcome-name" id="welcome-name">読み込み中...</div>
       <div class="welcome-msg" id="welcome-msg"></div>
-      <div class="goal-badge" id="goal-badge"></div>
     </div>
 
     <!-- Stats -->
@@ -273,7 +260,6 @@
 
     <!-- 入会1週間ガイド -->
     <a class="week-guide" id="week-guide" href="#" style="display:none">
-      <div class="week-guide-icon" id="guide-icon">🌱</div>
       <div class="week-guide-inner">
         <div class="week-guide-label" id="guide-label">入会 1 日目のステップ</div>
         <div class="week-guide-text" id="guide-text"></div>
@@ -281,36 +267,22 @@
       </div>
     </a>
 
-    <!-- 今日のおすすめアクション -->
-    <a class="today-action" id="today-action" href="#">
-      <div class="today-action-icon" id="action-icon">⏳</div>
-      <div class="today-action-inner">
-        <div class="today-action-label" id="action-label">今日やること</div>
-        <div class="today-action-text" id="action-text">読み込み中...</div>
-        <div class="today-action-sub" id="action-sub"></div>
-      </div>
-      <div style="color:#f5c0c0;font-size:18px">›</div>
-    </a>
 
     <!-- CTA 2x2 -->
     <div class="cta-grid">
       <a class="cta-card" id="checkin-cta" href="checkin.html">
-        <div class="cta-icon">✨</div>
         <div class="cta-title">気分チェックイン</div>
         <div class="cta-sub" id="checkin-sub">今の気持ちを記録</div>
       </a>
       <a class="cta-card" id="report-cta" href="daily_report.html">
-        <div class="cta-icon">📝</div>
         <div class="cta-title">日報を書く</div>
         <div class="cta-sub" id="report-sub">3つの良かったこと</div>
       </a>
       <a class="cta-card" href="lectures.html">
-        <div class="cta-icon">▶️</div>
         <div class="cta-title">講義を進める</div>
         <div class="cta-sub" id="lecture-sub">読み込み中...</div>
       </a>
       <a class="cta-card" href="my_works.html">
-        <div class="cta-icon">📚</div>
         <div class="cta-title">ワーク履歴</div>
         <div class="cta-sub" id="work-sub">提出済みを見る</div>
       </a>
@@ -319,12 +291,10 @@
     <!-- 日記・月次レポート -->
     <div class="cta-grid">
       <a class="cta-card" href="diary.html" id="diary-cta">
-        <div class="cta-icon">🌙</div>
         <div class="cta-title">復縁日記</div>
         <div class="cta-sub" id="diary-sub">今の気持ちを自由に</div>
       </a>
       <a class="cta-card" href="monthly_report.html">
-        <div class="cta-icon">📊</div>
         <div class="cta-title">月次レポート</div>
         <div class="cta-sub">今月の成長を確認</div>
       </a>
@@ -378,13 +348,6 @@
     </div>
   </div>
 
-  <nav class="bottom-nav">
-    <a class="nav-item active" href="dashboard.html"><div class="nav-icon">🏠</div><div class="nav-label">ホーム</div></a>
-    <a class="nav-item" href="checkin.html"><div class="nav-icon">✨</div><div class="nav-label">気分</div></a>
-    <a class="nav-item" href="daily_report.html"><div class="nav-icon">📝</div><div class="nav-label">日報</div></a>
-    <a class="nav-item" href="lectures.html"><div class="nav-icon">▶️</div><div class="nav-label">講義</div></a>
-    <a class="nav-item" href="my_works.html"><div class="nav-icon">📚</div><div class="nav-label">ワーク</div></a>
-  </nav>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="lectures-data.js"></script>
@@ -459,13 +422,12 @@
       const days = ['日','月','火','水','木','金','土'];
       document.getElementById('date-text').textContent =
         `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日（${days[today.getDay()]}）`;
-      document.getElementById('welcome-name').textContent = `${name}、こんにちは 🌸`;
+      document.getElementById('welcome-name').textContent = `${name}さん、こんにちは`;
       document.getElementById('welcome-msg').textContent = MESSAGES[today.getDate() % MESSAGES.length];
-      document.getElementById('goal-badge').textContent = GOAL_LABELS[profile.goal] || '';
 
       // 入会日数バッジ
       const enrollDays = getEnrollDays(profile);
-      document.getElementById('days-badge').textContent = `入会 ${enrollDays} 日目 🌱`;
+      document.getElementById('days-badge').textContent = `入会 ${enrollDays} 日目`;
 
       // 並行フェッチ
       const todayStr = getDateStr(today);
@@ -538,20 +500,19 @@
 
       // 入会1週間ガイド (Day 1〜7)
       const DAY_GUIDES = [
-        { icon: '🌱', label: '入会 1 日目のステップ', text: 'まず第0章の講義を見てみよう', link: 'lectures.html' },
-        { icon: '✨', label: '入会 2 日目のステップ', text: '今日の気分をチェックインしてみよう', link: 'checkin.html' },
-        { icon: '▶️', label: '入会 3 日目のステップ', text: '第1章を見てみよう', link: 'lectures.html' },
-        { icon: '📝', label: '入会 4 日目のステップ', text: '日報を書いてみよう', link: 'daily_report.html' },
-        { icon: '▶️', label: '入会 5 日目のステップ', text: '第2・3章を進めよう', link: 'lectures.html' },
-        { icon: '✏️', label: '入会 6 日目のステップ', text: '最初のワーク（3-3）に挑戦しよう', link: 'lectures.html' },
-        { icon: '🌸', label: '入会 7 日目！', text: '1週間続けられたね。この調子で進もう', link: 'lectures.html' }
+        { label: '入会 1 日目のステップ', text: 'まず第0章の講義を見てみよう', link: 'lectures.html' },
+        { label: '入会 2 日目のステップ', text: '今日の気分をチェックインしてみよう', link: 'checkin.html' },
+        { label: '入会 3 日目のステップ', text: '第1章を見てみよう', link: 'lectures.html' },
+        { label: '入会 4 日目のステップ', text: '日報を書いてみよう', link: 'daily_report.html' },
+        { label: '入会 5 日目のステップ', text: '第2・3章を進めよう', link: 'lectures.html' },
+        { label: '入会 6 日目のステップ', text: '最初のワーク（3-3）に挑戦しよう', link: 'lectures.html' },
+        { label: '入会 7 日目', text: '1週間続けられたね。この調子で進もう', link: 'lectures.html' }
       ];
       if (enrollDays >= 1 && enrollDays <= 7) {
         const guide = DAY_GUIDES[enrollDays - 1];
         const guideEl = document.getElementById('week-guide');
         guideEl.style.display = 'flex';
         guideEl.href = guide.link;
-        document.getElementById('guide-icon').textContent = guide.icon;
         document.getElementById('guide-label').textContent = guide.label;
         document.getElementById('guide-text').textContent = guide.text;
       }
@@ -563,37 +524,6 @@
         document.getElementById('diary-sub').innerHTML = '<span class="done-pill">✓ 書いた</span>';
       }
 
-      // 今日のおすすめアクション
-      const actionEl = document.getElementById('today-action');
-      let actionIcon, actionLabel, actionText, actionSub, actionLink;
-      if (!todayCheckin) {
-        actionIcon = '✨'; actionLabel = '今日やること';
-        actionText = '今日の気分をチェックインしよう'; actionSub = '気持ちを記録するだけでOK';
-        actionLink = 'checkin.html';
-      } else if (!todayReportRes.data) {
-        actionIcon = '📝'; actionLabel = '今日やること';
-        actionText = '今日の日報を書こう'; actionSub = '3つの良かったことを書くだけ';
-        actionLink = 'daily_report.html';
-      } else if (workSet.size < 16 && unlockedCount > 2) {
-        actionIcon = '✏️'; actionLabel = '次のステップ';
-        actionText = '未提出のワークを確認しよう'; actionSub = `${workSet.size} / 16 提出済み`;
-        actionLink = 'lectures.html';
-      } else {
-        actionIcon = '🌸'; actionLabel = '今日は完璧！';
-        actionText = '今日もよく頑張ったね。ゆっくり休んでね。'; actionSub = '';
-        actionLink = null;
-        actionEl.classList.add('today-action-done');
-      }
-      document.getElementById('action-icon').textContent = actionIcon;
-      document.getElementById('action-label').textContent = actionLabel;
-      document.getElementById('action-text').textContent = actionText;
-      document.getElementById('action-sub').textContent = actionSub;
-      if (actionLink) {
-        actionEl.href = actionLink;
-      } else {
-        actionEl.style.cursor = 'default';
-        actionEl.querySelector('div[style]').style.display = 'none';
-      }
 
       // 章ロードマップ
       const roadmapEl = document.getElementById('roadmap');
