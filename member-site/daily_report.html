@@ -204,20 +204,6 @@
       text-decoration: none;
     }
 
-    .bottom-nav {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      background: #fff;
-      border-top: 1px solid #f5e5e5;
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      padding: 8px 0 18px;
-      z-index: 10;
-    }
-    .nav-item { text-align: center; padding: 4px; cursor: pointer; color: #ddd; text-decoration: none; }
-    .nav-item.active { color: #e95f5f; }
-    .nav-icon { font-size: 20px; }
-    .nav-label { font-size: 9px; margin-top: 2px; }
   </style>
 </head>
 <body>
@@ -319,13 +305,6 @@
     <a class="done-btn" href="dashboard.html">ホームへ戻る</a>
   </div>
 
-  <nav class="bottom-nav">
-    <a class="nav-item" href="dashboard.html"><div class="nav-icon">🏠</div><div class="nav-label">ホーム</div></a>
-    <a class="nav-item" href="checkin.html"><div class="nav-icon">✨</div><div class="nav-label">気分</div></a>
-    <a class="nav-item active" href="daily_report.html"><div class="nav-icon">📝</div><div class="nav-label">日報</div></a>
-    <a class="nav-item" href="lectures.html"><div class="nav-icon">▶️</div><div class="nav-label">講義</div></a>
-    <a class="nav-item" href="my_works.html"><div class="nav-icon">📚</div><div class="nav-label">ワーク</div></a>
-  </nav>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script>
