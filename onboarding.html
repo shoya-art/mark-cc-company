@@ -247,7 +247,7 @@
       }, { onConflict: 'id' });
 
       if (error) {
-        alert('保存に失敗しました。もう一度試してください。');
+        alert('保存に失敗しました。\nエラー: ' + error.message + '\nコード: ' + error.code);
         btn.disabled = false;
         btn.textContent = 'はじめる';
         return;
