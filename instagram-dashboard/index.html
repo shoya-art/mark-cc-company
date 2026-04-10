@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instagram Analytics | @mark_fukuen</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d0d12;
+      --surface: #16161f;
+      --surface2: #1e1e2a;
+      --border: #2a2a3a;
+      --accent: #c77dff;
+      --accent2: #7b2ff7;
+      --pink: #ff6b9d;
+      --orange: #ff9a3c;
+      --green: #06d6a0;
+      --red: #ff4d6d;
+      --blue: #4cc9f0;
+      --yellow: #ffd166;
+      --text: #eeeef5;
+      --text2: #8888a8;
+      --radius: 14px;
+      --radius-sm: 8px;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ========== SETUP ========== */
+    #setup-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+    .setup-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 44px; max-width: 500px; width: 100%; }
+    .setup-logo { font-size: 24px; font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 6px; }
+    .setup-sub { color: var(--text2); font-size: 13px; margin-bottom: 32px; }
+    .form-group { margin-bottom: 18px; }
+    .form-label { display: block; font-size: 11px; font-weight: 700; color: var(--text2); margin-bottom: 7px; text-transform: uppercase; letter-spacing: .07em; }
+    .form-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 11px 14px; color: var(--text); font-size: 14px; outline: none; transition: border-color .2s; }
+    .form-input:focus { border-color: var(--accent); }
+    .form-hint { font-size: 11px; color: var(--text2); margin-top: 5px; line-height: 1.5; }
+    .btn-primary { width: 100%; background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #fff; border: none; border-radius: var(--radius-sm); padding: 13px; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 6px; transition: opacity .2s; }
+    .btn-primary:hover { opacity: .85; }
+    .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+    .error-banner { background: rgba(255,77,109,.12); border: 1px solid rgba(255,77,109,.3); border-radius: var(--radius-sm); padding: 11px 14px; color: #ff6b8a; font-size: 13px; margin-bottom: 14px; display: none; }
+    .guide { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--border); }
+    .guide-title { font-size: 11px; font-weight: 700; color: var(--text2); margin-bottom: 14px; text-transform: uppercase; letter-spacing: .07em; }
+    .step { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-start; }
+    .step-num { background: var(--accent2); color: #fff; width: 20px; height: 20px; border-radius: 50%; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+    .step-text { font-size: 12px; color: var(--text2); line-height: 1.55; }
+    .step-text a { color: var(--accent); text-decoration: none; }
+    code { background: var(--surface2); padding: 1px 5px; border-radius: 4px; font-size: 11px; }
+
+    /* ========== LOADING ========== */
+    #loading { display: none; align-items: center; justify-content: center; min-height: 100vh; flex-direction: column; gap: 14px; }
+    .spinner { width: 38px; height: 38px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { color: var(--text2); font-size: 13px; }
+
+    /* ========== HEADER ========== */
+    #dashboard { display: none; }
+    .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 20; }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .header-logo { font-size: 16px; font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .account-pill { background: var(--surface2); border: 1px solid var(--border); border-radius: 50px; padding: 5px 12px; font-size: 12px; color: var(--text2); display: flex; align-items: center; gap: 6px; }
+    .dot-green { width: 7px; height: 7px; background: var(--green); border-radius: 50%; }
+    .header-right { display: flex; gap: 8px; }
+    .btn-sm { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 7px 14px; color: var(--text2); font-size: 12px; cursor: pointer; transition: all .2s; }
+    .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ========== MAIN ========== */
+    .main { padding: 28px 28px 48px; max-width: 1400px; margin: 0 auto; }
+    .section-label { font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 14px; margin-top: 28px; }
+
+    /* ========== WEEKLY CARDS ========== */
+    .weekly-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 8px; }
+    .weekly-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+    .wc-label { font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+    .wc-value { font-size: 28px; font-weight: 800; line-height: 1; margin-bottom: 8px; }
+    .wc-compare { display: flex; align-items: center; gap: 5px; }
+    .wc-badge { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 50px; }
+    .badge-up { background: rgba(6,214,160,.15); color: var(--green); }
+    .badge-down { background: rgba(255,77,109,.15); color: var(--red); }
+    .badge-flat { background: rgba(136,136,168,.12); color: var(--text2); }
+    .wc-prev { font-size: 11px; color: var(--text2); }
+
+    /* ========== POST TABLE ========== */
+    .table-wrapper { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .table-header { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .table-title { font-size: 15px; font-weight: 700; }
+    .table-meta { font-size: 12px; color: var(--text2); }
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 1100px; }
+    thead th { padding: 10px 14px; text-align: right; font-size: 10px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; background: var(--surface2); border-bottom: 1px solid var(--border); white-space: nowrap; }
+    thead th:first-child, thead th:nth-child(2) { text-align: left; }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .12s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface2); }
+    tbody td { padding: 11px 14px; font-size: 13px; text-align: right; white-space: nowrap; }
+    tbody td:first-child, tbody td:nth-child(2) { text-align: left; }
+    .type-pill { display: inline-block; padding: 2px 9px; border-radius: 50px; font-size: 10px; font-weight: 700; }
+    .pill-reel { background: rgba(199,125,255,.15); color: var(--accent); }
+    .pill-image { background: rgba(76,201,240,.15); color: var(--blue); }
+    .caption-cell { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text2); font-size: 12px; }
+    .top-mark { display: inline-block; width: 6px; height: 6px; background: var(--orange); border-radius: 50%; margin-left: 4px; vertical-align: middle; }
+    .num { font-weight: 700; }
+    .num-accent { color: var(--accent); }
+    .num-green { color: var(--green); }
+    .num-blue { color: var(--blue); }
+    .num-pink { color: var(--pink); }
+    .num-yellow { color: var(--yellow); }
+    .num-orange { color: var(--orange); }
+    .skip-bar { display: inline-flex; align-items: center; gap: 5px; }
+    .skip-track { width: 40px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .skip-fill { height: 100%; border-radius: 2px; }
+
+    @media (max-width: 768px) {
+      .main { padding: 16px; }
+      .weekly-grid { grid-template-columns: repeat(2, 1fr); }
+      .header { padding: 12px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div id="setup-screen">
+  <div class="setup-card">
+    <div class="setup-logo">📊 Instagram Analytics</div>
+    <div class="setup-sub">@mark_fukuen のパフォーマンスを一画面で確認</div>
+    <div class="error-banner" id="error-banner"></div>
+    <div class="form-group">
+      <label class="form-label">アクセストークン</label>
+      <input type="text" id="access-token" class="form-input" placeholder="EAAxxxxxxxxxxxx...">
+      <div class="form-hint">Instagram Graph API の長期トークン（60日有効）</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Instagram ビジネスアカウント ID</label>
+      <input type="text" id="account-id" class="form-input" placeholder="17841xxxxxxxxxx">
+      <div class="form-hint">数字のみ。Graph APIエクスプローラーの <code>GET /me/accounts</code> で確認可能</div>
+    </div>
+    <button class="btn-primary" id="connect-btn" onclick="connectAPI()">接続してダッシュボードを起動</button>
+    <div class="guide">
+      <div class="guide-title">🔑 初回セットアップ手順（約15分）</div>
+      <div class="step"><div class="step-num">1</div><div class="step-text"><a href="https://developers.facebook.com/apps" target="_blank">developers.facebook.com/apps</a> でアプリを新規作成（種別：ビジネス）</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-text">「Instagram グラフ API」プロダクトを追加 → Instagramアカウントを連携</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-text"><a href="https://developers.facebook.com/tools/explorer" target="_blank">Graph APIエクスプローラー</a> でトークン生成。必要権限：<code>instagram_basic</code> <code>instagram_manage_insights</code> <code>pages_read_engagement</code></div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-text"><a href="https://developers.facebook.com/tools/debug/accesstoken" target="_blank">トークンデバッガー</a> で「長期トークンに変換」（60日有効）</div></div>
+      <div class="step"><div class="step-num">5</div><div class="step-text">アカウントIDを <code>GET /me/accounts</code> で確認して上のフォームに入力</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="loading" style="display:flex">
+  <div class="loading">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loading-text">接続中...</div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="header">
+    <div class="header-left">
+      <div class="header-logo">📊 Instagram Analytics</div>
+      <div class="account-pill"><div class="dot-green"></div><span id="account-name">@mark_fukuen</span></div>
+    </div>
+    <div class="header-right">
+      <button class="btn-sm" onclick="refreshData()">🔄 更新</button>
+      <button class="btn-sm" onclick="logout()">ログアウト</button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- WEEKLY -->
+    <div class="section-label">📅 週次サマリー（今週 vs 先週）</div>
+    <div class="weekly-grid" id="weekly-grid">
+      <!-- JS で生成 -->
+    </div>
+
+    <!-- POSTS -->
+    <div class="section-label">📱 投稿別パフォーマンス（直近20件）</div>
+    <div class="table-wrapper">
+      <div class="table-header">
+        <div class="table-title">投稿一覧</div>
+        <div class="table-meta" id="posts-meta">取得中...</div>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>種別</th>
+              <th>キャプション</th>
+              <th>いいね</th>
+              <th>コメント</th>
+              <th>再投稿</th>
+              <th>保存</th>
+              <th>PFアクセス</th>
+              <th>LPクリック</th>
+              <th>閲覧数</th>
+              <th>リーチ</th>
+              <th>スキップ率</th>
+              <th>平均再生</th>
+              <th>フォロー</th>
+              <th>投稿日</th>
+            </tr>
+          </thead>
+          <tbody id="posts-tbody">
+            <tr><td colspan="14" style="text-align:center;padding:40px;color:var(--text2)">読み込み中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  let postsData = [];
+
+  // ===== SETUP =====
+  function showError(msg) {
+    const el = document.getElementById('error-banner');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  async function connectAPI() {
+    const token = document.getElementById('access-token').value.trim();
+    const accountId = document.getElementById('account-id').value.trim();
+    if (!token || !accountId) { showError('両方入力してください'); return; }
+    document.getElementById('error-banner').style.display = 'none';
+    document.getElementById('connect-btn').disabled = true;
+    document.getElementById('connect-btn').textContent = '接続中...';
+    localStorage.setItem('ig_token', token);
+    localStorage.setItem('ig_account_id', accountId);
+    await loadDashboard(token, accountId);
+  }
+
+  function logout() {
+    localStorage.removeItem('ig_token');
+    localStorage.removeItem('ig_account_id');
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('setup-screen').style.display = 'flex';
+    document.getElementById('connect-btn').disabled = false;
+    document.getElementById('connect-btn').textContent = '接続してダッシュボードを起動';
+  }
+
+  async function refreshData() {
+    const token = localStorage.getItem('ig_token');
+    const accountId = localStorage.getItem('ig_account_id');
+    if (token && accountId) await loadDashboard(token, accountId);
+  }
+
+  // ===== API =====
+  async function igFetch(path, params = {}) {
+    const token = localStorage.getItem('ig_token');
+    const url = new URL(`https://graph.facebook.com/v25.0/${path}`);
+    url.searchParams.set('access_token', token);
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+    const res = await fetch(url.toString());
+    const json = await res.json();
+    if (json.error) throw new Error(json.error.message);
+    return json;
+  }
+
+  function setLoading(msg) {
+    document.getElementById('loading-text').textContent = msg;
+    document.getElementById('loading').style.display = 'flex';
+    document.getElementById('setup-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'none';
+  }
+
+  async function loadDashboard(token, accountId) {
+    setLoading('アカウント情報を取得中...');
+    try {
+      // Account info
+      const account = await igFetch(accountId, { fields: 'username,followers_count,media_count' });
+      document.getElementById('account-name').textContent = `@${account.username}`;
+
+      // Weekly insights (this week vs last week)
+      setLoading('週次データを取得中...');
+      await loadWeeklyData(accountId);
+
+      // Posts
+      setLoading('投稿データを取得中...');
+      await loadPostsData(accountId);
+
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+
+    } catch (e) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('setup-screen').style.display = 'flex';
+      document.getElementById('connect-btn').disabled = false;
+      document.getElementById('connect-btn').textContent = '接続してダッシュボードを起動';
+      showError(`エラー: ${e.message}`);
+    }
+  }
+
+  async function loadWeeklyData(accountId) {
+    const now = Math.floor(Date.now() / 1000);
+    const week1Start = now - 7 * 86400;   // 今週
+    const week2Start = now - 14 * 86400;  // 先週
+
+    const weeklyMetrics = ['reach', 'profile_views', 'website_clicks', 'follower_count'];
+    const labels = {
+      reach: 'リーチ数',
+      profile_views: 'PFアクセス',
+      website_clicks: 'リンクタップ',
+      follower_count: 'フォロー数',
+      unfollows: 'フォロー解除'
+    };
+
+    const weekData = { this: {}, last: {} };
+
+    for (const metric of weeklyMetrics) {
+      try {
+        // This week
+        const r1 = await igFetch(`${accountId}/insights`, {
+          metric, period: 'day', since: week1Start, until: now
+        });
+        weekData.this[metric] = r1.data[0]?.values?.reduce((s, v) => s + v.value, 0) ?? 0;
+
+        // Last week
+        const r2 = await igFetch(`${accountId}/insights`, {
+          metric, period: 'day', since: week2Start, until: week1Start
+        });
+        weekData.last[metric] = r2.data[0]?.values?.reduce((s, v) => s + v.value, 0) ?? 0;
+      } catch (e) {
+        weekData.this[metric] = null;
+        weekData.last[metric] = null;
+      }
+    }
+
+    // フォロー解除（follower_countの差分から近似）
+    // ※ APIから直接取れないため省略表示
+    weekData.this.unfollows = null;
+    weekData.last.unfollows = null;
+
+    renderWeeklyCards(weekData, labels);
+  }
+
+  function renderWeeklyCards(data, labels) {
+    const metrics = ['reach', 'profile_views', 'website_clicks', 'follower_count', 'unfollows'];
+    const accentColors = ['var(--accent)', 'var(--blue)', 'var(--pink)', 'var(--green)', 'var(--orange)'];
+
+    document.getElementById('weekly-grid').innerHTML = metrics.map((key, i) => {
+      const cur = data.this[key];
+      const prev = data.last[key];
+      const label = labels[key];
+
+      let badgeHtml = '';
+      let prevHtml = '';
+
+      if (cur === null) {
+        return `
+          <div class="weekly-card">
+            <div class="wc-label">${label}</div>
+            <div class="wc-value" style="color:${accentColors[i]};font-size:20px;color:var(--text2)">取得不可</div>
+            <div class="wc-prev" style="font-size:11px">APIプランにより非対応</div>
+          </div>`;
+      }
+
+      if (prev !== null && prev > 0) {
+        const diff = cur - prev;
+        const pct = ((diff / prev) * 100).toFixed(1);
+        const up = diff >= 0;
+        badgeHtml = `<span class="wc-badge ${up ? 'badge-up' : 'badge-down'}">${up ? '▲' : '▼'} ${Math.abs(pct)}%</span>`;
+        prevHtml = `<span class="wc-prev">先週 ${fmt(prev)}</span>`;
+      } else {
+        badgeHtml = `<span class="wc-badge badge-flat">－</span>`;
+        prevHtml = `<span class="wc-prev">先週データなし</span>`;
+      }
+
+      return `
+        <div class="weekly-card">
+          <div class="wc-label">${label}</div>
+          <div class="wc-value" style="color:${accentColors[i]}">${fmt(cur)}</div>
+          <div class="wc-compare">${badgeHtml}${prevHtml}</div>
+        </div>`;
+    }).join('');
+  }
+
+  async function loadPostsData(accountId) {
+    const media = await igFetch(`${accountId}/media`, {
+      fields: 'id,media_type,caption,timestamp,like_count,comments_count',
+      limit: 20
+    });
+
+    const posts = [];
+    for (const item of media.data) {
+      let ins = { plays: 0, reach: 0, saved: 0, impressions: 0, shares: 0,
+                  profile_visits: 0, taps_on_bio_link: 0, follows: 0,
+                  ig_reels_avg_watch_time: 0, ig_reels_video_view_total_time: 0 };
+      try {
+        const isReel = item.media_type === 'VIDEO';
+        const metricList = isReel
+          ? 'plays,reach,saved,impressions,shares,follows,ig_reels_avg_watch_time,profile_visits'
+          : 'reach,saved,impressions,shares,follows,profile_visits';
+        const r = await igFetch(`${item.id}/insights`, { metric: metricList });
+        r.data.forEach(m => {
+          const v = m.values?.[0]?.value ?? m.value ?? 0;
+          ins[m.name] = v;
+        });
+      } catch (e) {}
+      posts.push({ ...item, ...ins });
+    }
+
+    postsData = posts;
+    renderTable(posts);
+    document.getElementById('posts-meta').textContent = `${posts.length}件`;
+  }
+
+  function renderTable(posts) {
+    const maxPlays = Math.max(...posts.map(p => p.plays || 0), 1);
+    const tbody = document.getElementById('posts-tbody');
+
+    tbody.innerHTML = posts.map(p => {
+      const isReel = p.media_type === 'VIDEO';
+      const typeHtml = isReel
+        ? '<span class="type-pill pill-reel">リール</span>'
+        : '<span class="type-pill pill-image">写真</span>';
+
+      const caption = (p.caption || '').replace(/\n/g, ' ').slice(0, 28) + ((p.caption || '').length > 28 ? '…' : '');
+      const isTop = (p.plays || 0) === maxPlays && maxPlays > 0 && isReel;
+      const date = new Date(p.timestamp).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
+
+      // スキップ率（推定）: 再生数があって平均再生時間が短い → スキップ率高い
+      // 近似: 仮に動画15秒とすると avg_watch / 15 = 完了率、skip ≒ 1 - 完了率
+      const avgWatch = p.ig_reels_avg_watch_time || 0; // ms
+      const assumedDuration = 30000; // 30秒と仮定（ms）
+      const skipRate = isReel && avgWatch > 0
+        ? Math.max(0, Math.min(99, Math.round((1 - avgWatch / assumedDuration) * 100)))
+        : null;
+
+      const skipHtml = skipRate !== null
+        ? `<span class="skip-bar">
+            <span class="skip-track"><span class="skip-fill" style="width:${skipRate}%;background:${skipRate > 70 ? 'var(--red)' : skipRate > 40 ? 'var(--yellow)' : 'var(--green)'}"></span></span>
+            <span style="color:${skipRate > 70 ? 'var(--red)' : skipRate > 40 ? 'var(--yellow)' : 'var(--green)'};">${skipRate}%</span>
+           </span>`
+        : '<span style="color:var(--text2)">-</span>';
+
+      const avgWatchSec = isReel && avgWatch > 0 ? (avgWatch / 1000).toFixed(1) + 's' : '-';
+
+      return `<tr>
+        <td>${typeHtml}</td>
+        <td><span class="caption-cell">${caption}</span>${isTop ? '<span class="top-mark" title="最多再生"></span>' : ''}</td>
+        <td class="num num-pink">${fmt(p.like_count)}</td>
+        <td class="num">${fmt(p.comments_count)}</td>
+        <td class="num num-yellow">${fmt(p.shares)}</td>
+        <td class="num num-green">${fmt(p.saved)}</td>
+        <td class="num num-blue">${fmt(p.profile_visits)}</td>
+        <td class="num num-orange">${fmt(p.taps_on_bio_link)}</td>
+        <td class="num num-accent">${fmt(isReel ? p.plays : p.impressions)}</td>
+        <td class="num">${fmt(p.reach)}</td>
+        <td>${skipHtml}</td>
+        <td style="color:var(--text2)">${avgWatchSec}</td>
+        <td class="num num-green">${fmt(p.follows)}</td>
+        <td style="color:var(--text2);font-size:12px">${date}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ===== UTILS =====
+  function fmt(n) {
+    if (n == null || n === 0 || n === '') return '-';
+    if (n >= 10000) return (n / 10000).toFixed(1) + '万';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+    return n.toLocaleString('ja-JP');
+  }
+
+  // ===== AUTO LOGIN =====
+  window.onload = () => {
+    document.getElementById('loading').style.display = 'none';
+    const token = localStorage.getItem('ig_token');
+    const accountId = localStorage.getItem('ig_account_id');
+    if (token && accountId) loadDashboard(token, accountId);
+    else document.getElementById('setup-screen').style.display = 'flex';
+  };
+</script>
+</body>
+</html>
