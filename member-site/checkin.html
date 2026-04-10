@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>チェックイン | リリー</title>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      background: #fdf5f5;
+      color: #333;
+      min-height: 100vh;
+      padding-bottom: 100px;
+    }
+
+    .header {
+      background: #fff;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      border-bottom: 1px solid #f5e5e5;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .back-btn {
+      width: 36px; height: 36px;
+      background: #fdf5f5;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      color: #e95f5f;
+      border: none;
+      flex-shrink: 0;
+    }
+    .header h1 { font-size: 16px; font-weight: 700; color: #333; }
+
+    .content { padding: 24px 20px; max-width: 480px; margin: 0 auto; }
+
+    .date-badge {
+      display: inline-block;
+      background: #fff;
+      border: 1.5px solid #f5c0c0;
+      color: #e95f5f;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 20px;
+      margin-bottom: 24px;
+    }
+
+    /* Already done */
+    .already-done {
+      background: linear-gradient(135deg, #e8f5e9, #f5fff5);
+      border: 1.5px solid #a8d8a8;
+      border-radius: 16px;
+      padding: 16px 18px;
+      text-align: center;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .already-done p { color: #66bb6a; font-size: 13px; font-weight: 700; }
+
+    /* Emotion tags section */
+    .section-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 22px 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 12px rgba(233,95,95,0.06);
+    }
+    .section-label {
+      font-size: 15px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 4px;
+    }
+    .section-desc {
+      font-size: 12px;
+      color: #bbb;
+      margin-bottom: 18px;
+    }
+
+    /* Emotion bubbles */
+    .emotion-groups { display: flex; flex-direction: column; gap: 12px; }
+    .emotion-group-label {
+      font-size: 11px;
+      color: #bbb;
+      font-weight: 700;
+      letter-spacing: .5px;
+      margin-bottom: 6px;
+    }
+    .emotion-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .emotion-tag {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 8px 14px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .2s;
+      border: 2px solid transparent;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    /* Positive - pink/orange */
+    .tag-positive {
+      background: #fff0f3;
+      color: #e95f5f;
+      border-color: #f5c0c0;
+    }
+    .tag-positive.selected {
+      background: #e95f5f;
+      color: #fff;
+      border-color: #e95f5f;
+      transform: scale(1.05);
+    }
+    /* Neutral - green/beige */
+    .tag-neutral {
+      background: #f5fbf0;
+      color: #6a9e6a;
+      border-color: #c8e6c8;
+    }
+    .tag-neutral.selected {
+      background: #6a9e6a;
+      color: #fff;
+      border-color: #6a9e6a;
+      transform: scale(1.05);
+    }
+    /* Negative - blue/gray */
+    .tag-negative {
+      background: #f0f5ff;
+      color: #7090c0;
+      border-color: #c0d0ee;
+    }
+    .tag-negative.selected {
+      background: #7090c0;
+      color: #fff;
+      border-color: #7090c0;
+      transform: scale(1.05);
+    }
+
+    /* Score section */
+    .score-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .score-item { text-align: center; }
+    .score-item-label { font-size: 11px; color: #bbb; margin-bottom: 8px; }
+    .score-btns { display: flex; flex-direction: column; gap: 4px; }
+    .score-btn-row { display: flex; gap: 4px; justify-content: center; }
+    .score-btn {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      border: 2px solid #f5e5e5;
+      background: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      color: #ccc;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .2s;
+      font-family: inherit;
+    }
+    .score-btn.selected {
+      background: #e95f5f;
+      border-color: #e95f5f;
+      color: #fff;
+    }
+    .score-selected-val {
+      font-size: 22px;
+      font-weight: 700;
+      color: #e95f5f;
+      margin-top: 6px;
+    }
+
+    /* Note */
+    textarea {
+      width: 100%;
+      background: #fdf5f5;
+      border: 2px solid #f5e5e5;
+      border-radius: 14px;
+      color: #333;
+      font-size: 14px;
+      font-family: inherit;
+      padding: 14px 16px;
+      resize: none;
+      outline: none;
+      line-height: 1.8;
+      transition: border-color .2s;
+    }
+    textarea:focus { border-color: #e95f5f; }
+    textarea::placeholder { color: #ccc; }
+
+    /* Submit */
+    .btn {
+      width: 100%;
+      padding: 18px;
+      background: linear-gradient(135deg, #e95f5f, #d44a4a);
+      color: #fff;
+      border: none;
+      border-radius: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+      letter-spacing: .5px;
+    }
+    .btn:hover { opacity: .88; }
+    .btn:active { transform: scale(.98); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* Done screen */
+    .done-screen {
+      display: none;
+      text-align: center;
+      padding: 60px 20px;
+    }
+    .done-icon { font-size: 72px; margin-bottom: 20px; }
+    .done-title { font-size: 24px; font-weight: 700; color: #333; margin-bottom: 10px; }
+    .done-sub {
+      font-size: 14px;
+      color: #999;
+      line-height: 1.8;
+      margin-bottom: 36px;
+    }
+    .done-btn {
+      display: inline-block;
+      padding: 16px 40px;
+      background: linear-gradient(135deg, #e95f5f, #d44a4a);
+      color: #fff;
+      border-radius: 16px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="header">
+    <button class="back-btn" onclick="window.location.href='dashboard.html'">←</button>
+    <h1>今日のチェックイン</h1>
+  </div>
+
+  <div class="content" id="form-content">
+    <div class="date-badge" id="date-badge"></div>
+
+    <div class="already-done" id="already-done-msg">
+      <p>✅ 今日はすでにチェックイン済みです</p>
+    </div>
+
+    <!-- 感情タグ -->
+    <div class="section-card">
+      <div class="section-label">今の気持ちは？</div>
+      <div class="section-desc">当てはまるものを選んでね（複数OK）</div>
+      <div class="emotion-groups">
+        <div>
+          <div class="emotion-group-label">ポジティブ</div>
+          <div class="emotion-tags">
+            <div class="emotion-tag tag-positive" onclick="toggleTag(this,'満足')">😊 満足</div>
+            <div class="emotion-tag tag-positive" onclick="toggleTag(this,'嬉しい')">🌸 嬉しい</div>
+            <div class="emotion-tag tag-positive" onclick="toggleTag(this,'ワクワク')">✨ ワクワク</div>
+            <div class="emotion-tag tag-positive" onclick="toggleTag(this,'安心')">🕊️ 安心</div>
+            <div class="emotion-tag tag-positive" onclick="toggleTag(this,'スッキリ')">💫 スッキリ</div>
+            <div class="emotion-tag tag-positive" onclick="toggleTag(this,'やる気')">🔥 やる気</div>
+          </div>
+        </div>
+        <div>
+          <div class="emotion-group-label">ニュートラル</div>
+          <div class="emotion-tags">
+            <div class="emotion-tag tag-neutral" onclick="toggleTag(this,'普通')">☁️ 普通</div>
+            <div class="emotion-tag tag-neutral" onclick="toggleTag(this,'穏やか')">🍃 穏やか</div>
+            <div class="emotion-tag tag-neutral" onclick="toggleTag(this,'モヤモヤ')">🌫️ モヤモヤ</div>
+            <div class="emotion-tag tag-neutral" onclick="toggleTag(this,'眠い')">😪 眠い</div>
+          </div>
+        </div>
+        <div>
+          <div class="emotion-group-label">ネガティブ</div>
+          <div class="emotion-tags">
+            <div class="emotion-tag tag-negative" onclick="toggleTag(this,'不安')">💧 不安</div>
+            <div class="emotion-tag tag-negative" onclick="toggleTag(this,'悲しい')">🌧️ 悲しい</div>
+            <div class="emotion-tag tag-negative" onclick="toggleTag(this,'疲れた')">😔 疲れた</div>
+            <div class="emotion-tag tag-negative" onclick="toggleTag(this,'イライラ')">😤 イライラ</div>
+            <div class="emotion-tag tag-negative" onclick="toggleTag(this,'落ち込み')">🌑 落ち込み</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- スコア -->
+    <div class="section-card">
+      <div class="section-label">今日のスコア</div>
+      <div class="section-desc">それぞれ1〜5で教えてね</div>
+      <div class="score-row">
+        <div class="score-item">
+          <div class="score-item-label">気分</div>
+          <div class="score-selected-val" id="mood-val">-</div>
+          <div class="score-btns">
+            <div class="score-btn-row">
+              <button class="score-btn" onclick="setScore('mood',1)">1</button>
+              <button class="score-btn" onclick="setScore('mood',2)">2</button>
+              <button class="score-btn" onclick="setScore('mood',3)">3</button>
+            </div>
+            <div class="score-btn-row">
+              <button class="score-btn" onclick="setScore('mood',4)">4</button>
+              <button class="score-btn" onclick="setScore('mood',5)">5</button>
+            </div>
+          </div>
+        </div>
+        <div class="score-item">
+          <div class="score-item-label">行動</div>
+          <div class="score-selected-val" id="action-val">-</div>
+          <div class="score-btns">
+            <div class="score-btn-row">
+              <button class="score-btn" onclick="setScore('action',1)">1</button>
+              <button class="score-btn" onclick="setScore('action',2)">2</button>
+              <button class="score-btn" onclick="setScore('action',3)">3</button>
+            </div>
+            <div class="score-btn-row">
+              <button class="score-btn" onclick="setScore('action',4)">4</button>
+              <button class="score-btn" onclick="setScore('action',5)">5</button>
+            </div>
+          </div>
+        </div>
+        <div class="score-item">
+          <div class="score-item-label">前向きさ</div>
+          <div class="score-selected-val" id="state-val">-</div>
+          <div class="score-btns">
+            <div class="score-btn-row">
+              <button class="score-btn" onclick="setScore('state',1)">1</button>
+              <button class="score-btn" onclick="setScore('state',2)">2</button>
+              <button class="score-btn" onclick="setScore('state',3)">3</button>
+            </div>
+            <div class="score-btn-row">
+              <button class="score-btn" onclick="setScore('state',4)">4</button>
+              <button class="score-btn" onclick="setScore('state',5)">5</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- メモ -->
+    <div class="section-card">
+      <div class="section-label">今日の一言（任意）</div>
+      <div class="section-desc">なんでも。感情を言葉にするだけでOK</div>
+      <textarea id="note" rows="3" placeholder="例：今日は元彼のことを思い出したけど、講義を見て少し楽になった。"></textarea>
+    </div>
+
+    <button class="btn" id="submit-btn" onclick="submitCheckin()">チェックインする ✨</button>
+  </div>
+
+  <div class="done-screen" id="done-screen">
+    <div class="done-icon">🌸</div>
+    <div class="done-title">今日も記録したよ</div>
+    <div class="done-sub">
+      ここに来てくれてありがとう。<br>
+      毎日の積み重ねが、必ず結果につながるから。
+    </div>
+    <a class="done-btn" href="dashboard.html">ホームへ戻る</a>
+  </div>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script>
+    const { createClient } = window.supabase;
+    const sb = createClient(
+      'https://ejcajjtptbrcwmgzqhjz.supabase.co',
+      'sb_publishable_LF8EU4bFZpegd6wZPXGynQ_j_nkEGdP'
+    );
+
+    let userId = null;
+    let alreadyDone = false;
+    const scores = { mood: null, action: null, state: null };
+    const selectedTags = new Set();
+
+    function toggleTag(el, label) {
+      if (el.classList.contains('selected')) {
+        el.classList.remove('selected');
+        selectedTags.delete(label);
+      } else {
+        el.classList.add('selected');
+        selectedTags.add(label);
+      }
+    }
+
+    function setScore(field, val) {
+      scores[field] = val;
+      document.getElementById(field + '-val').textContent = val;
+      document.querySelectorAll(`[onclick^="setScore('${field}"]`).forEach(btn => {
+        btn.classList.toggle('selected', +btn.textContent === val);
+      });
+    }
+
+    function getDateStr(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    (async () => {
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) { window.location.href = 'index.html'; return; }
+      userId = user.id;
+
+      const today = new Date();
+      const dayOfWeek = ['日','月','火','水','木','金','土'][today.getDay()];
+      document.getElementById('date-badge').textContent =
+        `${today.getMonth()+1}月${today.getDate()}日（${dayOfWeek}）`;
+
+      const todayStr = getDateStr(today);
+      const { data: existing } = await sb.from('checkins')
+        .select('*').eq('user_id', userId).eq('date', todayStr).single();
+
+      if (existing) {
+        alreadyDone = true;
+        document.getElementById('already-done-msg').style.display = 'block';
+        setScore('mood', existing.mood);
+        setScore('action', existing.action);
+        setScore('state', existing.state);
+        if (existing.note) document.getElementById('note').value = existing.note;
+        if (existing.tags) {
+          existing.tags.forEach(t => {
+            document.querySelectorAll('.emotion-tag').forEach(el => {
+              if (el.textContent.trim().includes(t)) {
+                el.classList.add('selected');
+                selectedTags.add(t);
+              }
+            });
+          });
+        }
+        document.getElementById('submit-btn').textContent = '更新する ✨';
+      }
+    })();
+
+    async function submitCheckin() {
+      if (!scores.mood || !scores.action || !scores.state) {
+        alert('スコアをすべて選んでください（気分・行動・前向きさ）');
+        return;
+      }
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true;
+      btn.textContent = '送信中...';
+
+      const today = new Date();
+      const record = {
+        user_id: userId,
+        date: getDateStr(today),
+        mood: scores.mood,
+        action: scores.action,
+        state: scores.state,
+        tags: Array.from(selectedTags),
+        note: document.getElementById('note').value.trim() || null
+      };
+
+      const { error } = alreadyDone
+        ? await sb.from('checkins').update({ mood: record.mood, action: record.action, state: record.state, tags: record.tags, note: record.note })
+            .eq('user_id', userId).eq('date', record.date)
+        : await sb.from('checkins').insert(record);
+
+      if (error) {
+        alert('送信に失敗しました。もう一度お試しください。');
+        btn.disabled = false;
+        btn.textContent = alreadyDone ? '更新する ✨' : 'チェックインする ✨';
+        return;
+      }
+
+      document.getElementById('form-content').style.display = 'none';
+      document.getElementById('done-screen').style.display = 'block';
+    }
+  </script>
+</body>
+</html>

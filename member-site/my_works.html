@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ワーク履歴 | リリー</title>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      background: #fdf5f5;
+      color: #333;
+      min-height: 100vh;
+      padding-bottom: 20px;
+    }
+
+    .header {
+      background: #fff;
+      padding: 16px 20px;
+      border-bottom: 1px solid #f5e5e5;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .header h1 { font-size: 16px; font-weight: 700; color: #333; }
+    .header-sub { font-size: 11px; color: #bbb; margin-top: 2px; }
+
+    .content { padding: 20px; max-width: 500px; margin: 0 auto; }
+
+    /* Summary card */
+    .summary-card {
+      background: linear-gradient(135deg, #e95f5f, #c94444);
+      border-radius: 20px;
+      padding: 20px;
+      color: #fff;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .summary-icon { font-size: 40px; }
+    .summary-count { font-size: 36px; font-weight: 700; line-height: 1; }
+    .summary-unit { font-size: 14px; opacity: .8; }
+    .summary-label { font-size: 12px; opacity: .75; margin-top: 4px; }
+
+    /* Filter tabs */
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .filter-tabs::-webkit-scrollbar { display: none; }
+    .filter-tab {
+      flex-shrink: 0;
+      padding: 7px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      border: 1.5px solid #f5e5e5;
+      background: #fff;
+      color: #bbb;
+      transition: all .2s;
+    }
+    .filter-tab.active { background: #e95f5f; border-color: #e95f5f; color: #fff; }
+
+    /* Work cards */
+    .work-card {
+      background: #fff;
+      border-radius: 18px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 12px rgba(233,95,95,0.06);
+      overflow: hidden;
+    }
+    .work-card-header {
+      padding: 16px 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: background .15s;
+    }
+    .work-card-header:hover { background: #fdf5f5; }
+    .work-card-icon {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: #fff8e1;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .work-card-info { flex: 1; min-width: 0; }
+    .work-card-chapter { font-size: 10px; color: #e95f5f; font-weight: 700; margin-bottom: 3px; }
+    .work-card-title { font-size: 14px; font-weight: 700; color: #333; line-height: 1.3; }
+    .work-card-date { font-size: 11px; color: #bbb; margin-top: 3px; }
+    .work-card-arrow { font-size: 16px; color: #f5c0c0; transition: transform .2s; flex-shrink: 0; }
+    .work-card.open .work-card-arrow { transform: rotate(90deg); }
+
+    /* Answer content */
+    .work-card-body {
+      display: none;
+      padding: 0 18px 18px;
+      border-top: 1px solid #f5e5e5;
+    }
+    .work-card.open .work-card-body { display: block; }
+
+    .answer-block {
+      margin-top: 14px;
+    }
+    .answer-q {
+      font-size: 12px;
+      font-weight: 700;
+      color: #888;
+      margin-bottom: 6px;
+      padding-left: 8px;
+      border-left: 2px solid #f5c0c0;
+      line-height: 1.5;
+    }
+    .answer-text {
+      font-size: 13px;
+      color: #555;
+      line-height: 1.8;
+      background: #fdf5f5;
+      border-radius: 10px;
+      padding: 10px 12px;
+      white-space: pre-wrap;
+    }
+    .checklist-summary {
+      background: #fdf5f5;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-top: 6px;
+    }
+    .checklist-score-display {
+      font-size: 22px; font-weight: 700; color: #e95f5f; margin-bottom: 4px;
+    }
+    .checklist-score-label { font-size: 12px; color: #aaa; }
+    .checkbox-chips {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;
+    }
+    .checkbox-chip {
+      font-size: 11px; padding: 4px 10px; border-radius: 12px;
+    }
+    .checkbox-chip.checked { background: #fff0f3; color: #e95f5f; font-weight: 700; }
+    .checkbox-chip.unchecked { background: #f5f5f5; color: #ccc; }
+
+    /* LINE share */
+    .line-share-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: #06c755;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 16px;
+      transition: opacity .2s;
+    }
+    .line-share-btn:hover { opacity: .88; }
+    .line-logo { width: 20px; height: 20px; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+    }
+    .empty-icon { font-size: 56px; margin-bottom: 16px; }
+    .empty-title { font-size: 16px; font-weight: 700; color: #333; margin-bottom: 8px; }
+    .empty-sub { font-size: 13px; color: #aaa; line-height: 1.8; }
+    .empty-btn {
+      display: inline-block;
+      background: #e95f5f;
+      color: #fff;
+      text-decoration: none;
+      padding: 12px 28px;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 700;
+      margin-top: 20px;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>ワーク履歴</h1>
+    <div class="header-sub" id="header-sub">読み込み中...</div>
+  </div>
+
+  <div class="content">
+    <div class="summary-card">
+      <div class="summary-icon">✏️</div>
+      <div>
+        <div class="summary-count"><span id="done-count">0</span> <span style="font-size:18px">/ 16</span></div>
+        <div class="summary-unit">件提出済み</div>
+        <div class="summary-label" id="summary-label">読み込み中...</div>
+      </div>
+    </div>
+
+    <div class="filter-tabs">
+      <button class="filter-tab active" onclick="filterWorks('all', this)">すべて</button>
+      <button class="filter-tab" onclick="filterWorks('done', this)">提出済み</button>
+      <button class="filter-tab" onclick="filterWorks('pending', this)">未提出</button>
+    </div>
+
+    <div id="work-list"></div>
+  </div>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="lectures-data.js"></script>
+  <script>
+    const { createClient } = window.supabase;
+    const sb = createClient(
+      'https://ejcajjtptbrcwmgzqhjz.supabase.co',
+      'sb_publishable_LF8EU4bFZpegd6wZPXGynQ_j_nkEGdP'
+    );
+
+    const LINE_ID = 'YOUR_LINE_ID'; // ← ジローの公式LINE IDに変更
+
+    let allWorks = [];
+    let currentFilter = 'all';
+
+    function buildLineUrl(lectureTitle, answerText) {
+      const msg = `【リリー ワーク提出】\n\n「${lectureTitle}」\n\n${answerText.slice(0, 300)}${answerText.length > 300 ? '…' : ''}`;
+      return `https://line.me/R/oaMessage/@${LINE_ID}/?${encodeURIComponent(msg)}`;
+    }
+
+    function formatAnswerHTML(lecture, savedAnswer) {
+      if (!savedAnswer) return '';
+      let parsed = {};
+      try { parsed = JSON.parse(savedAnswer); } catch(e) { parsed = { _raw: savedAnswer }; }
+
+      const wt = lecture.workType || 'questions';
+      let html = '';
+
+      if (wt === 'checklist') {
+        const scores = parsed.scores || [];
+        const total = parsed.total || 0;
+        const max = (lecture.items || []).length * 4;
+        const pct = max > 0 ? Math.round(total / max * 100) : 0;
+        html += `<div class="checklist-summary">
+          <div class="checklist-score-display">${total} 点</div>
+          <div class="checklist-score-label">${max}点満点（達成率 ${pct}%）</div>
+        </div>`;
+        if (scores.length > 0 && lecture.items) {
+          html += '<div class="answer-block"><div class="answer-q">各項目のスコア</div><div style="margin-top:6px">';
+          lecture.items.forEach((item, i) => {
+            const s = scores[i] || 0;
+            const color = s >= 3 ? '#e95f5f' : s >= 2 ? '#f59f00' : '#ccc';
+            html += `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f5e5e5;font-size:12px">
+              <span style="color:${color};font-weight:700;width:16px">${s}</span>
+              <span style="color:#555;flex:1">${item}</span>
+            </div>`;
+          });
+          html += '</div></div>';
+        }
+
+      } else if (wt === 'checkbox') {
+        const checked = parsed.checked || [];
+        const count = parsed.count || checked.filter(Boolean).length;
+        html += `<div class="answer-block">
+          <div class="answer-q">チェックした項目（${count} / ${(lecture.items||[]).length}）</div>
+          <div class="checkbox-chips">
+            ${(lecture.items||[]).map((item, i) => `<span class="checkbox-chip ${checked[i]?'checked':'unchecked'}">${checked[i]?'✓ ':''}${item}</span>`).join('')}
+          </div>
+        </div>`;
+        if (parsed.note) {
+          html += `<div class="answer-block"><div class="answer-q">気づき</div><div class="answer-text">${parsed.note}</div></div>`;
+        }
+
+      } else if (wt === 'scenes') {
+        const scenes = lecture.scenes || [];
+        scenes.forEach((scene, i) => {
+          const sc = parsed[`scene${i}`] || {};
+          if (sc.high || sc.low || sc.answer) {
+            html += `<div class="answer-block"><div class="answer-q">${scene.title}</div>`;
+            if (sc.answer) html += `<div class="answer-text">${sc.answer}</div>`;
+            html += '</div>';
+          }
+        });
+
+      } else if (wt === 'table') {
+        const rows = lecture.rows || [];
+        rows.forEach((row, i) => {
+          const rowData = parsed[`row${i}`] || {};
+          const hasContent = Object.values(rowData).some(v => v);
+          if (hasContent) {
+            html += `<div class="answer-block"><div class="answer-q">${row.label}</div>`;
+            (lecture.columns || []).forEach(col => {
+              if (rowData[col.key]) {
+                html += `<div style="margin-top:6px"><div class="answer-q">${col.label}</div><div class="answer-text">${rowData[col.key]}</div></div>`;
+              }
+            });
+            html += '</div>';
+          }
+        });
+
+      } else {
+        // questions
+        const questions = Array.isArray(lecture.prompt) ? lecture.prompt : [lecture.prompt || ''];
+        const answers = parsed.answers || (parsed._raw ? [parsed._raw] : []);
+        questions.forEach((q, i) => {
+          if (answers[i]) {
+            html += `<div class="answer-block">
+              <div class="answer-q">Q${i+1}. ${q}</div>
+              <div class="answer-text">${answers[i]}</div>
+            </div>`;
+          }
+        });
+      }
+
+      return html;
+    }
+
+    function getAnswerPlainText(lecture, savedAnswer) {
+      if (!savedAnswer) return '';
+      let parsed = {};
+      try { parsed = JSON.parse(savedAnswer); } catch(e) { return savedAnswer; }
+      const wt = lecture.workType || 'questions';
+      if (wt === 'questions') {
+        const answers = parsed.answers || [];
+        const questions = Array.isArray(lecture.prompt) ? lecture.prompt : [lecture.prompt||''];
+        return questions.map((q, i) => answers[i] ? `Q${i+1}. ${q}\n→ ${answers[i]}` : '').filter(Boolean).join('\n\n');
+      } else if (wt === 'checklist') {
+        return `合計スコア：${parsed.total||0}点`;
+      } else if (wt === 'checkbox') {
+        const checked = (lecture.items||[]).filter((_, i) => (parsed.checked||[])[i]);
+        return `チェック項目（${parsed.count||0}件）：\n${checked.join('\n')}${parsed.note ? '\n\n気づき：'+parsed.note : ''}`;
+      } else {
+        return '（回答済み）';
+      }
+    }
+
+    function toggleCard(id) {
+      const card = document.getElementById('wcard-' + id);
+      if (card) card.classList.toggle('open');
+    }
+
+    function filterWorks(type, btn) {
+      currentFilter = type;
+      document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      renderList();
+    }
+
+    function renderList() {
+      const list = document.getElementById('work-list');
+      const filtered = allWorks.filter(w => {
+        if (currentFilter === 'done') return !!w.answer;
+        if (currentFilter === 'pending') return !w.answer;
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        list.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">${currentFilter === 'pending' ? '🌸' : '📚'}</div>
+            <div class="empty-title">${currentFilter === 'pending' ? '全部提出済みだよ！' : 'まだワークがないよ'}</div>
+            <div class="empty-sub">${currentFilter === 'pending' ? 'すごい！全ワーク提出できたね。' : '講義を進めるとワークが解放されるよ。'}</div>
+            ${currentFilter !== 'pending' ? `<a href="lectures.html" class="empty-btn">講義を見る</a>` : ''}
+          </div>`;
+        return;
+      }
+
+      list.innerHTML = filtered.map(w => {
+        const isDone = !!w.answer;
+        const answerHTML = isDone ? formatAnswerHTML(w.lecture, w.answer) : '';
+        const plainText = isDone ? getAnswerPlainText(w.lecture, w.answer) : '';
+
+        return `<div class="work-card" id="wcard-${w.lecture.id}">
+          <div class="work-card-header" onclick="toggleCard('${w.lecture.id}')">
+            <div class="work-card-icon">${isDone ? '✅' : '📝'}</div>
+            <div class="work-card-info">
+              <div class="work-card-chapter">${w.lecture.chapter}：${w.lecture.chapter_title}</div>
+              <div class="work-card-title">${w.lecture.title}</div>
+              <div class="work-card-date">${isDone ? '✓ 回答済み' + (w.updated_at ? '　' + w.updated_at.slice(0,10) : '') : '未提出'}</div>
+            </div>
+            <div class="work-card-arrow">›</div>
+          </div>
+          ${isDone ? `
+          <div class="work-card-body">
+            ${answerHTML}
+            <button class="line-share-btn" onclick="shareToLine('${w.lecture.id}', '${encodeURIComponent(w.lecture.title)}', '${encodeURIComponent(plainText)}')">
+              <svg class="line-logo" viewBox="0 0 24 24" fill="white"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
+              LINEでジローに共有する
+            </button>
+          </div>` : `
+          <div class="work-card-body">
+            <div style="text-align:center;padding:16px 0">
+              <div style="font-size:13px;color:#aaa;margin-bottom:16px">まだ提出していないよ</div>
+              <a href="lectures.html" style="display:inline-block;background:#e95f5f;color:#fff;text-decoration:none;padding:11px 24px;border-radius:12px;font-size:13px;font-weight:700">講義でワークを開く</a>
+            </div>
+          </div>`}
+        </div>`;
+      }).join('');
+    }
+
+    function shareToLine(lectureId, encodedTitle, encodedText) {
+      const title = decodeURIComponent(encodedTitle);
+      const text = decodeURIComponent(encodedText);
+      const msg = `【リリー ワーク提出】\n\n「${title}」\n\n${text.slice(0, 280)}${text.length > 280 ? '…' : ''}`;
+      const url = `https://line.me/R/oaMessage/@${LINE_ID}/?${encodeURIComponent(msg)}`;
+      window.open(url, '_blank');
+    }
+
+    (async () => {
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) { window.location.href = 'index.html'; return; }
+
+      const { data: answers } = await sb.from('work_answers')
+        .select('lecture_id, answer, updated_at').eq('user_id', user.id);
+
+      const answerMap = {};
+      if (answers) answers.forEach(a => { answerMap[a.lecture_id] = a; });
+
+      const workLectures = LECTURES.filter(l => l.type === 'work');
+      const doneCount = workLectures.filter(l => answerMap[l.id]).length;
+
+      document.getElementById('done-count').textContent = doneCount;
+      document.getElementById('header-sub').textContent = `${doneCount} / ${workLectures.length} 件提出済み`;
+      document.getElementById('summary-label').textContent =
+        doneCount === 0 ? 'ワークに取り組んでみよう！' :
+        doneCount === workLectures.length ? '全部提出済み！すごい！🌸' :
+        `あと ${workLectures.length - doneCount} 件`;
+
+      allWorks = workLectures.map(l => ({
+        lecture: l,
+        answer: answerMap[l.id]?.answer || null,
+        updated_at: answerMap[l.id]?.updated_at || null
+      }));
+
+      renderList();
+    })();
+  </script>
+</body>
+</html>

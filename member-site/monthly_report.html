@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>月次レポート | リリー</title>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      background: #fdf5f5;
+      color: #333;
+      min-height: 100vh;
+      padding-bottom: 100px;
+    }
+
+    .header {
+      background: #fff;
+      padding: 14px 20px;
+      display: flex; align-items: center; gap: 12px;
+      border-bottom: 1px solid #f5e5e5;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .back-btn {
+      width: 36px; height: 36px; background: #fdf5f5; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 18px; color: #e95f5f; border: none; flex-shrink: 0;
+    }
+    .header h1 { font-size: 16px; font-weight: 700; }
+
+    .content { padding: 20px; max-width: 500px; margin: 0 auto; }
+
+    /* Month navigation */
+    .month-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      background: linear-gradient(135deg, #e95f5f, #c94444);
+      border-radius: 20px; padding: 18px 20px; color: #fff; margin-bottom: 18px;
+    }
+    .month-arrow {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,0.2); border: none; color: #fff;
+      font-size: 18px; cursor: pointer; font-family: inherit;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s;
+    }
+    .month-arrow:hover { background: rgba(255,255,255,0.3); }
+    .month-arrow:disabled { opacity: .3; cursor: default; }
+    .month-center { text-align: center; }
+    .month-year { font-size: 12px; opacity: .75; }
+    .month-label { font-size: 24px; font-weight: 700; }
+
+    /* Stats */
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .stat-card {
+      background: #fff; border-radius: 18px; padding: 18px 14px; text-align: center;
+      box-shadow: 0 3px 14px rgba(233,95,95,0.07);
+    }
+    .stat-icon { font-size: 24px; margin-bottom: 6px; }
+    .stat-value { font-size: 32px; font-weight: 700; color: #e95f5f; line-height: 1; }
+    .stat-unit { font-size: 12px; color: #e95f5f; opacity: .7; }
+    .stat-label { font-size: 11px; color: #bbb; margin-top: 5px; }
+
+    /* Section */
+    .section {
+      background: #fff; border-radius: 20px; padding: 20px;
+      margin-bottom: 14px; box-shadow: 0 3px 14px rgba(233,95,95,0.07);
+    }
+    .section-title { font-size: 13px; font-weight: 700; color: #bbb; margin-bottom: 16px; letter-spacing: .5px; }
+
+    /* Good things */
+    .good-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 0; border-bottom: 1px solid #fdf5f5;
+    }
+    .good-item:last-child { border-bottom: none; }
+    .good-dot { color: #e95f5f; font-size: 14px; flex-shrink: 0; margin-top: 2px; }
+    .good-text { font-size: 13px; color: #555; line-height: 1.6; }
+    .good-date { font-size: 10px; color: #ccc; margin-top: 2px; }
+
+    /* Works */
+    .work-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #fff8e1; border-radius: 12px; padding: 8px 12px;
+      font-size: 12px; font-weight: 700; color: #f59f00; margin: 4px 4px 4px 0;
+    }
+
+    /* Score legend */
+    .score-legend { display: flex; gap: 14px; margin-bottom: 12px; }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #888; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    /* No data */
+    .no-data-block {
+      text-align: center; padding: 28px 0;
+    }
+    .no-data-icon { font-size: 40px; margin-bottom: 10px; }
+    .no-data-text { font-size: 13px; color: #bbb; line-height: 1.7; }
+
+    /* Comment card */
+    .comment-card {
+      background: linear-gradient(135deg, #fff8f8, #fff0f3);
+      border: 1.5px solid #f5c0c0; border-radius: 16px; padding: 16px 18px; margin-bottom: 16px;
+    }
+    .comment-label { font-size: 11px; font-weight: 700; color: #e95f5f; margin-bottom: 8px; }
+    .comment-text { font-size: 14px; color: #444; line-height: 1.9; }
+
+  </style>
+</head>
+<body>
+  <div class="header">
+    <button class="back-btn" onclick="history.back()">←</button>
+    <h1>月次レポート</h1>
+  </div>
+
+  <div class="content">
+    <!-- Month nav -->
+    <div class="month-nav">
+      <button class="month-arrow" id="prev-month" onclick="changeMonth(-1)">‹</button>
+      <div class="month-center">
+        <div class="month-year" id="month-year"></div>
+        <div class="month-label" id="month-label"></div>
+      </div>
+      <button class="month-arrow" id="next-month" onclick="changeMonth(1)">›</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">✨</div>
+        <div><span class="stat-value" id="stat-checkin">-</span><span class="stat-unit"> 回</span></div>
+        <div class="stat-label">チェックイン</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📊</div>
+        <div><span class="stat-value" id="stat-avg">-</span></div>
+        <div class="stat-label">平均スコア</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">✏️</div>
+        <div><span class="stat-value" id="stat-works">-</span><span class="stat-unit"> 件</span></div>
+        <div class="stat-label">ワーク提出</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🌙</div>
+        <div><span class="stat-value" id="stat-diary">-</span><span class="stat-unit"> 件</span></div>
+        <div class="stat-label">日記</div>
+      </div>
+    </div>
+
+    <!-- ジローのコメント（ランダム励まし）-->
+    <div class="comment-card" id="comment-card" style="display:none">
+      <div class="comment-label">💌 ジローより</div>
+      <div class="comment-text" id="comment-text"></div>
+    </div>
+
+    <!-- 自己肯定感の変化 -->
+    <div class="section" id="esteem-section" style="display:none">
+      <div class="section-title">自己肯定感の変化</div>
+      <div class="score-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#e95f5f"></div>自己肯定感</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#7ab8f5"></div>ポジティブ度</div>
+      </div>
+      <canvas id="esteemChart" height="130"></canvas>
+    </div>
+
+    <!-- チェックインスコア -->
+    <div class="section" id="checkin-chart-section" style="display:none">
+      <div class="section-title">気分スコアの推移</div>
+      <canvas id="checkinChart" height="120"></canvas>
+    </div>
+
+    <!-- 今月の良かったこと -->
+    <div class="section" id="goods-section" style="display:none">
+      <div class="section-title" id="goods-title">今月の良かったこと</div>
+      <div id="goods-list"></div>
+    </div>
+
+    <!-- 今月提出したワーク -->
+    <div class="section" id="works-section" style="display:none">
+      <div class="section-title">今月提出したワーク</div>
+      <div id="works-list"></div>
+    </div>
+
+    <!-- No data -->
+    <div class="no-data-block" id="no-data" style="display:none">
+      <div class="no-data-icon">🌱</div>
+      <div class="no-data-text">この月のデータがまだないよ。<br>毎日チェックインして記録を作っていこう！</div>
+    </div>
+  </div>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="lectures-data.js"></script>
+  <script>
+    const { createClient } = window.supabase;
+    const sb = createClient(
+      'https://ejcajjtptbrcwmgzqhjz.supabase.co',
+      'sb_publishable_LF8EU4bFZpegd6wZPXGynQ_j_nkEGdP'
+    );
+
+    let currentUser = null;
+    let displayYear = new Date().getFullYear();
+    let displayMonth = new Date().getMonth() + 1; // 1-based
+    let esteemChartInst = null;
+    let checkinChartInst = null;
+
+    const MONTH_COMMENTS = [
+      '今月もここに来てくれてありがとう。一歩一歩、確実に前に進んでいるよ。',
+      '数字に現れない成長も、絶対にあるよ。自分を誇りに思ってね。',
+      '継続することが一番難しくて、一番大切。続けてくれてありがとう。',
+      '感情と向き合い続けることが、一番の成長だよ。',
+      '記録が少ない月があっても大丈夫。またここに戻ってきてくれればそれでいい。'
+    ];
+
+    function getDateStr(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function updateMonthDisplay() {
+      const now = new Date();
+      document.getElementById('month-year').textContent = `${displayYear}年`;
+      document.getElementById('month-label').textContent = `${displayMonth}月`;
+
+      // Disable next if current month or future
+      const nextBtn = document.getElementById('next-month');
+      nextBtn.disabled = (displayYear > now.getFullYear()) ||
+        (displayYear === now.getFullYear() && displayMonth >= now.getMonth() + 1);
+    }
+
+    function changeMonth(delta) {
+      displayMonth += delta;
+      if (displayMonth < 1) { displayMonth = 12; displayYear--; }
+      if (displayMonth > 12) { displayMonth = 1; displayYear++; }
+      updateMonthDisplay();
+      loadMonthData();
+    }
+
+    async function loadMonthData() {
+      // Reset display
+      ['esteem-section','checkin-chart-section','goods-section','works-section','comment-card','no-data']
+        .forEach(id => document.getElementById(id).style.display = 'none');
+      ['stat-checkin','stat-avg','stat-works','stat-diary'].forEach(id => {
+        document.getElementById(id).textContent = '-';
+      });
+      if (esteemChartInst) { esteemChartInst.destroy(); esteemChartInst = null; }
+      if (checkinChartInst) { checkinChartInst.destroy(); checkinChartInst = null; }
+
+      const startDate = `${displayYear}-${String(displayMonth).padStart(2,'0')}-01`;
+      const endDate = new Date(displayYear, displayMonth, 0);
+      const endDateStr = getDateStr(endDate);
+
+      const [checkinsRes, reportsRes, diaryRes, worksRes] = await Promise.all([
+        sb.from('checkins').select('*').eq('user_id', currentUser.id)
+          .gte('date', startDate).lte('date', endDateStr).order('date'),
+        sb.from('daily_reports').select('date,good1,good2,good3,self_esteem_score,positive_score')
+          .eq('user_id', currentUser.id).gte('date', startDate).lte('date', endDateStr).order('date'),
+        sb.from('diary_entries').select('date').eq('user_id', currentUser.id)
+          .gte('date', startDate).lte('date', endDateStr),
+        sb.from('work_answers').select('lecture_id, updated_at').eq('user_id', currentUser.id)
+          .gte('updated_at', startDate + 'T00:00:00+09:00').lte('updated_at', endDateStr + 'T23:59:59+09:00')
+      ]);
+
+      const checkins = checkinsRes.data || [];
+      const reports = reportsRes.data || [];
+      const diaryEntries = diaryRes.data || [];
+      const works = worksRes.data || [];
+
+      const hasData = checkins.length > 0 || reports.length > 0 || diaryEntries.length > 0;
+      if (!hasData) {
+        document.getElementById('no-data').style.display = 'block';
+        return;
+      }
+
+      // Stats
+      document.getElementById('stat-checkin').textContent = checkins.length;
+      if (checkins.length > 0) {
+        const avg = checkins.reduce((s, c) => s + (c.mood + c.action + c.state) / 3, 0) / checkins.length;
+        document.getElementById('stat-avg').textContent = avg.toFixed(1);
+      } else {
+        document.getElementById('stat-avg').textContent = '-';
+      }
+      document.getElementById('stat-works').textContent = works.length;
+      document.getElementById('stat-diary').textContent = diaryEntries.length;
+
+      // ジローのコメント
+      const commentEl = document.getElementById('comment-card');
+      document.getElementById('comment-text').textContent = MONTH_COMMENTS[(displayMonth - 1) % MONTH_COMMENTS.length];
+      commentEl.style.display = 'block';
+
+      // 自己肯定感チャート
+      const esteemRows = reports.filter(r => r.self_esteem_score != null);
+      if (esteemRows.length >= 1) {
+        document.getElementById('esteem-section').style.display = 'block';
+        const labels = esteemRows.map(r => r.date.slice(5).replace('-', '/'));
+        esteemChartInst = new Chart(document.getElementById('esteemChart').getContext('2d'), {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [
+              { label: '自己肯定感', data: esteemRows.map(r => r.self_esteem_score),
+                borderColor: '#e95f5f', backgroundColor: 'rgba(233,95,95,0.07)',
+                fill: true, tension: .4, pointRadius: 4,
+                pointBackgroundColor: '#e95f5f', pointBorderColor: '#fff', pointBorderWidth: 2, spanGaps: true },
+              { label: 'ポジティブ度', data: esteemRows.map(r => r.positive_score),
+                borderColor: '#7ab8f5', backgroundColor: 'rgba(122,184,245,0.07)',
+                fill: true, tension: .4, pointRadius: 4,
+                pointBackgroundColor: '#7ab8f5', pointBorderColor: '#fff', pointBorderWidth: 2, spanGaps: true }
+            ]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: { min: 0, max: 10, ticks: { stepSize: 2, color: '#ccc', font: { size: 11, family: "'Zen Maru Gothic'" } }, grid: { color: '#f5e5e5' } },
+              x: { ticks: { color: '#ccc', font: { size: 11, family: "'Zen Maru Gothic'" } }, grid: { display: false } }
+            },
+            plugins: { legend: { display: false } }
+          }
+        });
+      }
+
+      // チェックインチャート (週ごとの平均)
+      if (checkins.length > 0) {
+        document.getElementById('checkin-chart-section').style.display = 'block';
+        checkinChartInst = new Chart(document.getElementById('checkinChart').getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: checkins.map(c => c.date.slice(5).replace('-','/')),
+            datasets: [{
+              data: checkins.map(c => +((c.mood + c.action + c.state) / 3).toFixed(1)),
+              backgroundColor: checkins.map(c => {
+                const avg = (c.mood + c.action + c.state) / 3;
+                return avg >= 4 ? 'rgba(233,95,95,0.7)' : avg >= 3 ? 'rgba(245,159,0,0.6)' : 'rgba(200,200,200,0.5)';
+              }),
+              borderRadius: 6, borderSkipped: false
+            }]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: { min: 1, max: 5, ticks: { stepSize: 1, color: '#ccc', font: { size: 11, family: "'Zen Maru Gothic'" } }, grid: { color: '#f5e5e5' } },
+              x: { ticks: { maxRotation: 45, color: '#ccc', font: { size: 9, family: "'Zen Maru Gothic'" } }, grid: { display: false } }
+            },
+            plugins: { legend: { display: false } }
+          }
+        });
+      }
+
+      // 良かったこと
+      const goodItems = [];
+      reports.forEach(r => {
+        ['good1','good2','good3'].forEach(key => {
+          if (r[key]) goodItems.push({ text: r[key], date: r.date });
+        });
+      });
+      if (goodItems.length > 0) {
+        document.getElementById('goods-section').style.display = 'block';
+        document.getElementById('goods-title').textContent = `今月の良かったこと（${goodItems.length}件）`;
+        document.getElementById('goods-list').innerHTML = goodItems.slice(0, 15).map(g => `
+          <div class="good-item">
+            <div class="good-dot">🌸</div>
+            <div>
+              <div class="good-text">${g.text}</div>
+              <div class="good-date">${g.date}</div>
+            </div>
+          </div>`).join('') + (goodItems.length > 15 ? `<div style="font-size:12px;color:#bbb;margin-top:8px;text-align:center">他 ${goodItems.length-15} 件</div>` : '');
+      }
+
+      // 今月のワーク
+      if (works.length > 0) {
+        document.getElementById('works-section').style.display = 'block';
+        const workLectures = (typeof LECTURES !== 'undefined' ? LECTURES : []).filter(l => l.type === 'work');
+        document.getElementById('works-list').innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:0">` +
+          works.map(w => {
+            const lecture = workLectures.find(l => l.id === w.lecture_id);
+            return `<div class="work-chip">✓ ${lecture ? lecture.title : w.lecture_id}</div>`;
+          }).join('') + `</div>`;
+      }
+    }
+
+    (async () => {
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) { window.location.href = 'index.html'; return; }
+      currentUser = user;
+      updateMonthDisplay();
+      await loadMonthData();
+    })();
+  </script>
+</body>
+</html>

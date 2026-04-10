@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>講義 | リリー</title>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      background: #fdf5f5;
+      color: #333;
+      min-height: 100vh;
+      padding-bottom: 20px;
+    }
+
+    .header {
+      background: #fff;
+      padding: 16px 20px;
+      border-bottom: 1px solid #f5e5e5;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .header h1 { font-size: 16px; font-weight: 700; color: #333; }
+    .header-sub { font-size: 11px; color: #bbb; margin-top: 2px; }
+
+    .content { padding: 20px; max-width: 500px; margin: 0 auto; }
+
+    /* Progress bar */
+    .progress-section {
+      background: #fff;
+      border-radius: 18px;
+      padding: 18px 18px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 12px rgba(233,95,95,0.06);
+    }
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #aaa;
+      margin-bottom: 8px;
+    }
+    .progress-label strong { color: #e95f5f; font-size: 14px; }
+    .progress-bar-bg {
+      height: 8px;
+      background: #f5e5e5;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #e95f5f, #f5a0a0);
+      border-radius: 4px;
+      transition: width .6s ease;
+    }
+
+    /* Chapter */
+    .chapter-group { margin-bottom: 24px; }
+    .chapter-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #e95f5f;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+      padding-left: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .chapter-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #f5c0c0;
+    }
+
+    /* Lecture card */
+    .lecture-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: all .2s;
+      border: 2px solid transparent;
+      box-shadow: 0 2px 8px rgba(233,95,95,0.05);
+      position: relative;
+    }
+    .lecture-card:hover:not(.locked) { border-color: #f5c0c0; transform: translateY(-1px); }
+    .lecture-card.locked { opacity: .55; cursor: default; }
+    .lecture-card.completed { border-color: #c8e6c9; background: #f5fff5; }
+
+    .lecture-num {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .num-video { background: #fff0f3; color: #e95f5f; }
+    .num-work { background: #fff8e1; color: #f59f00; }
+    .num-info { background: #f0f5ff; color: #7090c0; }
+    .num-locked { background: #f5f5f5; color: #ccc; }
+    .num-done { background: #e8f5e9; color: #66bb6a; }
+
+    .lecture-info { flex: 1; min-width: 0; }
+    .lecture-type-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 8px;
+      margin-bottom: 4px;
+    }
+    .badge-video { background: #fff0f3; color: #e95f5f; }
+    .badge-work { background: #fff8e1; color: #f59f00; }
+    .badge-info { background: #f0f5ff; color: #7090c0; }
+    .lecture-title { font-size: 14px; font-weight: 700; color: #333; line-height: 1.4; }
+    .lecture-title.locked-title { color: #bbb; }
+    .lecture-unlock-date { font-size: 11px; color: #ccc; margin-top: 2px; }
+
+    .lecture-arrow { font-size: 16px; color: #f5c0c0; flex-shrink: 0; }
+    .lecture-card.locked .lecture-arrow { content: '🔒'; }
+    .done-check { font-size: 18px; }
+
+    /* Modal overlay */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 100;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 28px 28px 0 0;
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 8px 0 40px;
+    }
+    .modal-handle {
+      width: 36px; height: 4px;
+      background: #eee;
+      border-radius: 2px;
+      margin: 12px auto 20px;
+    }
+    .modal-header {
+      padding: 0 20px 16px;
+      border-bottom: 1px solid #f5e5e5;
+    }
+    .modal-type-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      display: inline-block;
+    }
+    .modal-title { font-size: 17px; font-weight: 700; color: #333; line-height: 1.4; }
+    .modal-body { padding: 20px; }
+
+    /* Video embed */
+    .video-wrap {
+      position: relative;
+      padding-top: 56.25%;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #000;
+      margin-bottom: 16px;
+    }
+    .video-wrap iframe {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      border: none;
+    }
+    .video-external-btn {
+      display: block;
+      text-align: center;
+      padding: 12px;
+      background: #fdf5f5;
+      border: 1.5px solid #f5c0c0;
+      border-radius: 12px;
+      color: #e95f5f;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      margin-bottom: 16px;
+    }
+
+    /* Work form */
+    .work-prompt {
+      background: #fff8e1;
+      border-left: 4px solid #f59f00;
+      border-radius: 0 12px 12px 0;
+      padding: 14px 16px;
+      font-size: 14px;
+      color: #555;
+      line-height: 1.8;
+      margin-bottom: 16px;
+    }
+    .work-answer-label { font-size: 13px; color: #888; margin-bottom: 8px; font-weight: 500; }
+    textarea {
+      width: 100%;
+      background: #fdf5f5;
+      border: 2px solid #f5e5e5;
+      border-radius: 12px;
+      color: #333;
+      font-size: 14px;
+      font-family: inherit;
+      padding: 14px 16px;
+      resize: none;
+      outline: none;
+      line-height: 1.8;
+      transition: border-color .2s;
+    }
+    textarea:focus { border-color: #e95f5f; }
+    textarea::placeholder { color: #ccc; }
+
+    /* Info content */
+    .info-content {
+      font-size: 14px;
+      color: #555;
+      line-height: 1.9;
+    }
+
+    .modal-btn {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #e95f5f, #d44a4a);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: opacity .2s;
+    }
+    .modal-btn:hover { opacity: .88; }
+    .modal-btn:disabled { opacity: .45; }
+    .modal-btn-outline {
+      background: transparent;
+      border: 2px solid #e95f5f;
+      color: #e95f5f;
+      margin-top: 10px;
+    }
+    .modal-btn-outline:hover { background: #fff0f0; opacity: 1; }
+
+    .done-feedback {
+      background: linear-gradient(135deg, #e8f5e9, #f5fff5);
+      border: 1.5px solid #a8d8a8;
+      border-radius: 14px;
+      padding: 16px;
+      font-size: 14px;
+      color: #555;
+      line-height: 1.8;
+      margin-top: 16px;
+    }
+    .done-feedback strong { color: #66bb6a; }
+
+    /* Question memo */
+    .q-memo-section { margin-top: 16px; }
+    .q-memo-toggle {
+      width: 100%; background: #f0f5ff; border: 1.5px solid #d0ddf5;
+      border-radius: 12px; padding: 11px 16px; font-size: 13px; font-weight: 700;
+      color: #7090c0; font-family: inherit; cursor: pointer; text-align: left;
+      transition: background .15s;
+    }
+    .q-memo-toggle:hover { background: #e8f0ff; }
+    .q-memo-body { margin-top: 10px; }
+    .q-memo-item {
+      background: #f5f8ff; border-radius: 10px; padding: 10px 12px;
+      font-size: 13px; color: #555; line-height: 1.6; margin-bottom: 8px;
+    }
+    .q-memo-date { font-size: 10px; color: #bbb; margin-top: 4px; }
+    .q-memo-textarea {
+      width: 100%; background: #f5f8ff; border: 2px solid #d0ddf5;
+      border-radius: 10px; color: #333; font-size: 13px; font-family: inherit;
+      padding: 12px; resize: none; outline: none; margin-bottom: 8px;
+    }
+    .q-memo-textarea:focus { border-color: #7090c0; background: #fff; }
+    .q-memo-save {
+      background: #7090c0; color: #fff; border: none; border-radius: 10px;
+      padding: 10px 20px; font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer;
+    }
+
+    /* ── Work types ── */
+    .work-description {
+      background: #fff8e1;
+      border-left: 4px solid #f59f00;
+      border-radius: 0 14px 14px 0;
+      padding: 14px 16px;
+      font-size: 13px;
+      color: #666;
+      line-height: 1.9;
+      margin-bottom: 20px;
+      white-space: pre-line;
+    }
+    .work-q-block { margin-bottom: 18px; }
+    .work-q-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #555;
+      margin-bottom: 8px;
+      line-height: 1.7;
+      padding-left: 10px;
+      border-left: 3px solid #e95f5f;
+    }
+    .work-q-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #e95f5f;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      margin-right: 7px;
+      flex-shrink: 0;
+      vertical-align: middle;
+    }
+    /* Checklist (1-4 score) */
+    .checklist-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 0;
+      border-bottom: 1px solid #f5e5e5;
+    }
+    .checklist-item-text {
+      flex: 1;
+      font-size: 13px;
+      color: #444;
+      line-height: 1.5;
+    }
+    .score-group { display: flex; gap: 5px; flex-shrink: 0; }
+    .score-btn {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      border: 2px solid #f0e0e0;
+      background: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      color: #ccc;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .15s;
+    }
+    .score-btn.selected { border-color: #e95f5f; background: #e95f5f; color: #fff; }
+    .checklist-total { font-size: 14px; color: #e95f5f; font-weight: 700; margin: 16px 0 4px; text-align: right; }
+    /* Checkbox */
+    .checkbox-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 11px 0;
+      border-bottom: 1px solid #f5e5e5;
+      cursor: pointer;
+    }
+    .checkbox-item input[type="checkbox"] {
+      width: 18px; height: 18px;
+      margin-top: 2px;
+      flex-shrink: 0;
+      accent-color: #e95f5f;
+      cursor: pointer;
+    }
+    .checkbox-item label { font-size: 13px; color: #444; line-height: 1.6; cursor: pointer; }
+    .checkbox-count { font-size: 13px; color: #e95f5f; font-weight: 700; margin: 0 0 12px; }
+    /* Scenes */
+    .scene-block {
+      background: #fdf5f5;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .scene-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #e95f5f;
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+    .field-label { font-size: 12px; font-weight: 700; color: #888; margin-bottom: 6px; }
+    /* Table */
+    .table-row-block {
+      background: #fdf5f5;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .table-row-label { font-size: 12px; font-weight: 700; color: #e95f5f; margin-bottom: 10px; }
+    .table-col { margin-bottom: 10px; }
+    .table-col:last-child { margin-bottom: 0; }
+
+    /* Chapter clear overlay */
+    .chapter-clear-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.6);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .chapter-clear-overlay.open { display: flex; }
+    .chapter-clear-modal {
+      background: #fff;
+      border-radius: 28px;
+      padding: 36px 28px;
+      max-width: 340px;
+      width: 90%;
+      text-align: center;
+    }
+    .chapter-clear-emoji { font-size: 64px; margin-bottom: 12px; }
+    .chapter-clear-title { font-size: 22px; font-weight: 700; color: #e95f5f; margin-bottom: 8px; }
+    .chapter-clear-sub { font-size: 14px; color: #777; line-height: 1.8; margin-bottom: 24px; }
+    .chapter-clear-btn {
+      background: linear-gradient(135deg, #e95f5f, #d44a4a);
+      color: #fff; border: none; border-radius: 14px;
+      padding: 15px 32px; font-size: 15px; font-weight: 700;
+      font-family: inherit; cursor: pointer; width: 100%;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>講義一覧</h1>
+    <div class="header-sub" id="header-sub">読み込み中...</div>
+  </div>
+
+  <div class="content">
+    <div class="progress-section">
+      <div class="progress-label">
+        <span>受講の進捗</span>
+        <span><strong id="progress-num">0</strong> / 42</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress-bar" style="width:0%"></div>
+      </div>
+    </div>
+    <div id="lecture-list"></div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modal" onclick="handleOverlayClick(event)">
+    <div class="modal" id="modal-inner">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <div class="modal-type-badge" id="modal-badge"></div>
+        <div class="modal-title" id="modal-title"></div>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- 章クリアモーダル -->
+  <div class="chapter-clear-overlay" id="chapter-clear-overlay">
+    <div class="chapter-clear-modal">
+      <div class="chapter-clear-emoji" id="clear-emoji">🎉</div>
+      <div class="chapter-clear-title" id="clear-title">章クリア！</div>
+      <div class="chapter-clear-sub" id="clear-msg">よく頑張ったね。</div>
+      <button class="chapter-clear-btn" onclick="closeChapterClear()">次に進む ›</button>
+    </div>
+  </div>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="lectures-data.js"></script>
+  <script>
+    const { createClient } = window.supabase;
+    const sb = createClient(
+      'https://ejcajjtptbrcwmgzqhjz.supabase.co',
+      'sb_publishable_LF8EU4bFZpegd6wZPXGynQ_j_nkEGdP'
+    );
+
+    const LINE_ID = 'YOUR_LINE_ID'; // ← ジローの公式LINE IDに変更
+
+    // 各章の最後のlecture ID
+    const CHAPTER_LAST_ID = {
+      '第1章': '1-2', '第2章': '2-2',
+      '第3章': '3-9', '第4章': '4-18', '第5章': '5-10'
+    };
+    const CHAPTER_CLEAR_MSG = {
+      '第1章': { emoji: '🗺️', title: '第1章クリア！', msg: '復縁の全体像、つかめたかな？\nここからが本当のスタートだよ！' },
+      '第2章': { emoji: '💡', title: '第2章クリア！', msg: '自己肯定感の大切さ、伝わったかな。\n次のステップに進もう！' },
+      '第3章': { emoji: '🌟', title: '第3章クリア！', msg: '今の自分の状態を知ることができたね。\nこれだけで大きな一歩だよ。' },
+      '第4章': { emoji: '💪', title: '第4章クリア！', msg: '自己肯定感をプラスにする練習、\nよく頑張った！もう少しで完走だよ！' },
+      '第5章': { emoji: '🌸', title: '全章クリア！', msg: '本当によく頑張ったね。\nここまで来たあなたを誇りに思うよ💕\n彼との復縁、全力で応援してる！' }
+    };
+
+    let currentUser = null;
+    let workAnswers = {};
+    let currentLecture = null;
+
+    function toggleQMemo(lectureId) {
+      const body = document.getElementById(`qmemo-body-${lectureId}`);
+      if (body) body.style.display = body.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function saveQMemo(lectureId) {
+      const ta = document.getElementById(`qmemo-ta-${lectureId}`);
+      const q = ta?.value.trim();
+      if (!q) { alert('メモを入力してください'); return; }
+
+      const { error } = await sb.from('question_memos').insert({
+        user_id: currentUser.id, lecture_id: lectureId, question: q
+      });
+      if (error) { alert('保存に失敗しました'); return; }
+
+      if (!window._qmemos) window._qmemos = [];
+      window._qmemos.push({ lecture_id: lectureId, question: q, created_at: new Date().toISOString() });
+      ta.value = '';
+
+      const body = document.getElementById(`qmemo-body-${lectureId}`);
+      const newItem = document.createElement('div');
+      newItem.className = 'q-memo-item';
+      newItem.innerHTML = `${q}<div class="q-memo-date">たった今</div>`;
+      body.insertBefore(newItem, ta);
+    }
+
+    function closeChapterClear() {
+      document.getElementById('chapter-clear-overlay').classList.remove('open');
+    }
+
+    async function checkChapterClear(completedLectureId, viewedSet, answers) {
+      const lecture = LECTURES.find(l => l.id === completedLectureId);
+      if (!lecture) return;
+      const chapter = lecture.chapter;
+      if (CHAPTER_LAST_ID[chapter] !== completedLectureId) return;
+
+      // その章の全コンテンツが完了しているか確認
+      const chapterLectures = LECTURES.filter(l => l.chapter === chapter);
+      const allDone = chapterLectures.every(l => {
+        if (l.type === 'video') return viewedSet.has(l.id);
+        if (l.type === 'work') return !!(answers[l.id] || (l.id === completedLectureId));
+        return true; // info
+      });
+      if (!allDone) return;
+
+      // 祝いモーダル表示
+      const data = CHAPTER_CLEAR_MSG[chapter] || { emoji: '🎉', title: chapter + 'クリア！', msg: 'よく頑張ったね！' };
+      document.getElementById('clear-emoji').textContent = data.emoji;
+      document.getElementById('clear-title').textContent = data.title;
+      document.getElementById('clear-msg').textContent = data.msg;
+      setTimeout(() => {
+        document.getElementById('chapter-clear-overlay').classList.add('open');
+      }, 600);
+    }
+
+    function getDateStr(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function getYoutubeId(url) {
+      if (!url) return null;
+      const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([^&\s?]+)/);
+      return m ? m[1] : null;
+    }
+
+    function handleOverlayClick(e) {
+      if (e.target === document.getElementById('modal')) closeModal();
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.remove('open');
+    }
+
+    function openModal(lecture, isUnlocked) {
+      if (!isUnlocked) return;
+      currentLecture = lecture;
+
+      const badgeEl = document.getElementById('modal-badge');
+      const titleEl = document.getElementById('modal-title');
+      const bodyEl = document.getElementById('modal-body');
+
+      // Badge
+      const typeInfo = {
+        video: { label: '▶️ 動画', cls: 'badge-video' },
+        work: { label: '✏️ ワーク', cls: 'badge-work' },
+        info: { label: 'ℹ️ 説明', cls: 'badge-info' }
+      }[lecture.type] || { label: lecture.type, cls: '' };
+
+      badgeEl.className = 'modal-type-badge ' + typeInfo.cls;
+      badgeEl.textContent = typeInfo.label;
+      titleEl.textContent = lecture.title;
+
+      let html = '';
+
+      if (lecture.type === 'video') {
+        const ytId = getYoutubeId(lecture.url);
+        if (ytId) {
+          html += `<div class="video-wrap"><iframe src="https://www.youtube.com/embed/${ytId}?rel=0" allowfullscreen></iframe></div>`;
+        } else if (lecture.url) {
+          html += `<a class="video-external-btn" href="${lecture.url}" target="_blank">🔗 コンテンツを開く（外部リンク）</a>`;
+        }
+        html += `<button class="modal-btn" onclick="markViewed('${lecture.id}')">視聴完了 ✓</button>`;
+        // 質問メモ
+        const existingMemos = (window._qmemos || []).filter(m => m.lecture_id === lecture.id);
+        html += `<div class="q-memo-section" id="qmemo-wrap-${lecture.id}">
+          <button class="q-memo-toggle" onclick="toggleQMemo('${lecture.id}')">📝 この講義への質問・メモ${existingMemos.length ? ` (${existingMemos.length})` : ''}</button>
+          <div class="q-memo-body" id="qmemo-body-${lecture.id}" style="display:none">
+            ${existingMemos.map(m => `<div class="q-memo-item">${m.question}<div class="q-memo-date">${m.created_at.slice(0,10)}</div></div>`).join('')}
+            <textarea class="q-memo-textarea" id="qmemo-ta-${lecture.id}" rows="3" placeholder="疑問や気づいたことを書いておこう。後でジローに確認できるよ。"></textarea>
+            <button class="q-memo-save" onclick="saveQMemo('${lecture.id}')">メモを保存する</button>
+          </div>
+        </div>`;
+
+      } else if (lecture.type === 'work') {
+        html += buildWorkHTML(lecture);
+
+      } else {
+        // Info type
+        html += `<div class="info-content">${lecture.prompt || '説明コンテンツです。担当のジローからの説明をご覧ください。'}</div>`;
+        html += `<button class="modal-btn" onclick="closeModal()">閉じる</button>`;
+      }
+
+      bodyEl.innerHTML = html;
+      if (lecture.workType === 'checkbox') updateCheckCount();
+      if (lecture.workType === 'checklist') updateTotalScore();
+      document.getElementById('modal').classList.add('open');
+    }
+
+    async function markViewed(lectureId) {
+      await sb.from('lecture_views').upsert({ user_id: currentUser.id, lecture_id: lectureId }, { onConflict: 'user_id,lecture_id' });
+      closeModal();
+      const [unlocked, answers] = await Promise.all([getUnlockedCount(), loadWorkAnswers()]);
+      workAnswers = answers;
+      const { data: views } = await sb.from('lecture_views').select('lecture_id').eq('user_id', currentUser.id);
+      const viewedSet = new Set((views || []).map(v => v.lecture_id));
+      await checkChapterClear(lectureId, viewedSet, answers);
+      renderLectures(unlocked, answers);
+    }
+
+    // ── Work helpers ──────────────────────────────────────────
+
+    function buildWorkHTML(lecture) {
+      const saved = workAnswers[lecture.id] || '';
+      let parsed = {};
+      if (saved) {
+        try { parsed = JSON.parse(saved); } catch(e) { parsed = { _raw: saved }; }
+      }
+      const isDone = !!saved;
+      const wt = lecture.workType || 'questions';
+      let html = '';
+
+      if (wt === 'checklist') {
+        html += `<div class="work-description">${lecture.description || ''}</div>`;
+        const scores = parsed.scores || [];
+        lecture.items.forEach((item, i) => {
+          const sel = scores[i] || 0;
+          html += `<div class="checklist-item">
+            <div class="checklist-item-text">${i + 1}. ${item}</div>
+            <div class="score-group">
+              ${[1,2,3,4].map(n => `<button class="score-btn${sel===n?' selected':''}" onclick="selectScore(this,${i},${n})" data-idx="${i}" data-val="${n}">${n}</button>`).join('')}
+            </div>
+          </div>`;
+        });
+        html += `<div class="checklist-total">合計スコア：<span id="total-score">${parsed.total||0}</span> / ${lecture.items.length * 4} 点</div>`;
+
+      } else if (wt === 'checkbox') {
+        html += `<div class="work-description">${lecture.description || ''}</div>`;
+        const checkedArr = parsed.checked || [];
+        html += `<div class="checkbox-count">チェック済み：<span id="cc">0</span> / ${lecture.items.length}</div>`;
+        lecture.items.forEach((item, i) => {
+          html += `<div class="checkbox-item">
+            <input type="checkbox" id="cb-${i}" ${checkedArr[i]?'checked':''} onchange="updateCheckCount()">
+            <label for="cb-${i}">${item}</label>
+          </div>`;
+        });
+        if (lecture.after_question) {
+          html += `<div class="work-q-block" style="margin-top:18px">
+            <div class="work-q-label">${lecture.after_question}</div>
+            <textarea id="cb-note" rows="4" placeholder="気づいたことを書いてください。">${parsed.note||''}</textarea>
+          </div>`;
+        }
+
+      } else if (wt === 'scenes') {
+        html += `<div class="work-description">${lecture.description || ''}</div>`;
+        lecture.scenes.forEach((scene, i) => {
+          const sc = parsed[`scene${i}`] || {};
+          html += `<div class="scene-block">
+            <div class="scene-title">${scene.title}</div>
+            <div class="work-q-block">
+              <div class="field-label">${scene.high_label}</div>
+              <textarea id="sc${i}-high" rows="3" placeholder="${scene.high_placeholder}">${sc.high||''}</textarea>
+            </div>
+            <div class="work-q-block">
+              <div class="field-label">${scene.low_label}</div>
+              <textarea id="sc${i}-low" rows="3" placeholder="${scene.low_placeholder}">${sc.low||''}</textarea>
+            </div>
+            <div class="work-q-block">
+              <div class="field-label">${scene.question}</div>
+              <textarea id="sc${i}-answer" rows="3" placeholder="正直に書いてください。">${sc.answer||''}</textarea>
+            </div>
+          </div>`;
+        });
+
+      } else if (wt === 'table') {
+        html += `<div class="work-description">${lecture.description || ''}</div>`;
+        lecture.rows.forEach((row, i) => {
+          const rowData = parsed[`row${i}`] || {};
+          html += `<div class="table-row-block"><div class="table-row-label">${row.label}</div>`;
+          lecture.columns.forEach(col => {
+            html += `<div class="table-col">
+              <div class="field-label">${col.label}</div>
+              <textarea id="tbl${i}-${col.key}" rows="3" placeholder="${col.placeholder}">${rowData[col.key]||''}</textarea>
+            </div>`;
+          });
+          html += `</div>`;
+        });
+
+      } else {
+        // questions (default)
+        const questions = Array.isArray(lecture.prompt) ? lecture.prompt : [lecture.prompt || 'ワークに取り組みましょう。'];
+        const ans = parsed.answers || (parsed._raw ? [parsed._raw] : []);
+        questions.forEach((q, i) => {
+          html += `<div class="work-q-block">
+            <div class="work-q-label"><span class="work-q-num">${i+1}</span>${q}</div>
+            <textarea id="wq-${i}" rows="4" placeholder="思ったことを正直に書いてください。">${ans[i]||''}</textarea>
+          </div>`;
+        });
+      }
+
+      if (isDone) {
+        html += `<div class="done-feedback"><strong>✓ 回答済み</strong>　内容を更新することもできます。</div>`;
+      }
+      html += `<button class="modal-btn" onclick="submitWork('${lecture.id}')">${isDone ? '回答を更新する' : 'ワークを提出する'} ✨</button>`;
+      html += `<button class="modal-btn modal-btn-outline" onclick="closeModal()">閉じる</button>`;
+      return html;
+    }
+
+    function selectScore(btn, idx, val) {
+      btn.closest('.score-group').querySelectorAll('.score-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      updateTotalScore();
+    }
+
+    function updateTotalScore() {
+      const total = Array.from(document.querySelectorAll('.score-btn.selected'))
+        .reduce((s, b) => s + parseInt(b.dataset.val), 0);
+      const el = document.getElementById('total-score');
+      if (el) el.textContent = total;
+    }
+
+    function updateCheckCount() {
+      const total = document.querySelectorAll('.checkbox-item input[type="checkbox"]:checked').length;
+      const el = document.getElementById('cc');
+      if (el) el.textContent = total;
+    }
+
+    function collectWorkAnswer(lecture) {
+      const wt = lecture.workType || 'questions';
+
+      if (wt === 'checklist') {
+        const scores = lecture.items.map((_, i) => {
+          const sel = document.querySelector(`.score-btn.selected[data-idx="${i}"]`);
+          return sel ? parseInt(sel.dataset.val) : 0;
+        });
+        const total = scores.reduce((s, v) => s + v, 0);
+        if (total === 0) return null;
+        return JSON.stringify({ scores, total });
+
+      } else if (wt === 'checkbox') {
+        const checked = lecture.items.map((_, i) => {
+          const el = document.getElementById(`cb-${i}`);
+          return el ? el.checked : false;
+        });
+        const count = checked.filter(Boolean).length;
+        const noteEl = document.getElementById('cb-note');
+        const note = noteEl ? noteEl.value.trim() : '';
+        if (count === 0 && !note) return null;
+        return JSON.stringify({ checked, count, note });
+
+      } else if (wt === 'scenes') {
+        const result = {};
+        lecture.scenes.forEach((_, i) => {
+          result[`scene${i}`] = {
+            high: document.getElementById(`sc${i}-high`)?.value.trim() || '',
+            low: document.getElementById(`sc${i}-low`)?.value.trim() || '',
+            answer: document.getElementById(`sc${i}-answer`)?.value.trim() || ''
+          };
+        });
+        if (!Object.values(result).some(sc => sc.high || sc.low || sc.answer)) return null;
+        return JSON.stringify(result);
+
+      } else if (wt === 'table') {
+        const result = {};
+        lecture.rows.forEach((_, i) => {
+          result[`row${i}`] = {};
+          lecture.columns.forEach(col => {
+            result[`row${i}`][col.key] = document.getElementById(`tbl${i}-${col.key}`)?.value.trim() || '';
+          });
+        });
+        if (!Object.values(result).some(row => Object.values(row).some(v => v))) return null;
+        return JSON.stringify(result);
+
+      } else {
+        const questions = Array.isArray(lecture.prompt) ? lecture.prompt : [lecture.prompt || ''];
+        const answers = questions.map((_, i) => document.getElementById(`wq-${i}`)?.value.trim() || '');
+        if (answers.every(a => !a)) return null;
+        return JSON.stringify({ answers });
+      }
+    }
+
+    // ──────────────────────────────────────────────────────────
+
+    async function submitWork(lectureId) {
+      const lecture = LECTURES.find(l => l.id === lectureId);
+      const answer = collectWorkAnswer(lecture);
+      if (!answer) { alert('回答を入力してください'); return; }
+
+      const submitBtn = document.querySelector('.modal-btn:not(.modal-btn-outline)');
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '送信中...'; }
+
+      const { error } = await sb.from('work_answers').upsert({
+        user_id: currentUser.id,
+        lecture_id: lectureId,
+        answer,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id,lecture_id' });
+
+      if (error) {
+        alert('送信に失敗しました');
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'ワークを提出する ✨'; }
+        return;
+      }
+
+      workAnswers[lectureId] = answer;
+
+      // 章クリアチェック
+      const { data: views } = await sb.from('lecture_views').select('lecture_id').eq('user_id', currentUser.id);
+      const viewedSet = new Set((views || []).map(v => v.lecture_id));
+
+      // LINEシェアURL生成
+      const lec = LECTURES.find(l => l.id === lectureId);
+      const lineMsg = `【リリー ワーク提出】\n\n「${lec?.title || lectureId}」\nワークを提出しました！`;
+      const lineUrl = `https://line.me/R/oaMessage/@${LINE_ID}/?${encodeURIComponent(lineMsg)}`;
+
+      document.getElementById('modal-body').innerHTML = `
+        <div style="text-align:center;padding:20px 0">
+          <div style="font-size:64px;margin-bottom:16px">🌸</div>
+          <div style="font-size:18px;font-weight:700;color:#333;margin-bottom:10px">ワーク提出しました！</div>
+          <div style="font-size:14px;color:#999;line-height:1.8;margin-bottom:20px">
+            正直に向き合ってくれてありがとう。<br>
+            ジローが確認して個別にサポートするよ。
+          </div>
+          <a href="${lineUrl}" target="_blank"
+             style="display:flex;align-items:center;justify-content:center;gap:8px;background:#06c755;color:#fff;border-radius:14px;padding:14px;font-size:14px;font-weight:700;text-decoration:none;margin-bottom:10px">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
+            LINEでジローに共有する
+          </a>
+          <button class="modal-btn modal-btn-outline" onclick="closeModal();location.reload()">講義一覧に戻る</button>
+        </div>
+      `;
+
+      await checkChapterClear(lectureId, viewedSet, workAnswers);
+    }
+
+    async function getUnlockedCount() {
+      const { data: profile } = await sb.from('profiles').select('enrollment_date, created_at').eq('id', currentUser.id).single();
+      const enrollDate = profile?.enrollment_date
+        ? new Date(profile.enrollment_date + 'T00:00:00')
+        : new Date(profile?.created_at || new Date());
+      enrollDate.setHours(0, 0, 0, 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const days = Math.floor((today - enrollDate) / (1000 * 60 * 60 * 24));
+      return days + 1; // Day 1 = 1 content unlocked
+    }
+
+    async function loadWorkAnswers() {
+      const { data } = await sb.from('work_answers').select('lecture_id, answer').eq('user_id', currentUser.id);
+      const map = {};
+      if (data) data.forEach(r => { map[r.lecture_id] = r.answer; });
+      return map;
+    }
+
+    async function renderLectures(unlockedCount, answers) {
+      if (unlockedCount === undefined || answers === undefined) {
+        [unlockedCount, answers] = await Promise.all([getUnlockedCount(), loadWorkAnswers()]);
+        workAnswers = answers;
+      }
+      const list = document.getElementById('lecture-list');
+
+      // Get viewed lectures
+      const { data: views } = await sb.from('lecture_views').select('lecture_id').eq('user_id', currentUser.id);
+      const viewedSet = new Set((views || []).map(v => v.lecture_id));
+
+      // Count completed
+      let completedCount = 0;
+      LECTURES.forEach((l, idx) => {
+        if (idx < unlockedCount && (l.type === 'video' && viewedSet.has(l.id) || l.type === 'work' && answers[l.id] || l.type === 'info')) {
+          completedCount++;
+        }
+      });
+
+      document.getElementById('progress-num').textContent = Math.min(unlockedCount, LECTURES.length);
+      document.getElementById('progress-bar').style.width = (Math.min(unlockedCount, LECTURES.length) / LECTURES.length * 100) + '%';
+      document.getElementById('header-sub').textContent = unlockedCount >= LECTURES.length
+        ? '全コンテンツ解放済み！'
+        : `${unlockedCount}本解放中`;
+
+      // Group by chapter
+      const chapters = {};
+      LECTURES.forEach((l, idx) => {
+        if (!chapters[l.chapter]) {
+          chapters[l.chapter] = { title: l.chapter_title, items: [] };
+        }
+        chapters[l.chapter].items.push({ lecture: l, index: idx });
+      });
+
+      let html = '';
+      Object.entries(chapters).forEach(([chapter, data]) => {
+        html += `<div class="chapter-group"><div class="chapter-label">${chapter}：${data.title}</div>`;
+        data.items.forEach(({ lecture: l, index }) => {
+          const isUnlocked = index < unlockedCount;
+          const isCompleted = (l.type === 'video' && viewedSet.has(l.id)) ||
+                              (l.type === 'work' && !!answers[l.id]);
+
+          const typeColors = {
+            video: { num: 'num-video', badge: 'badge-video', label: '▶', badgeText: '動画' },
+            work: { num: 'num-work', badge: 'badge-work', label: '✏', badgeText: 'ワーク' },
+            info: { num: 'num-info', badge: 'badge-info', label: 'ℹ', badgeText: '説明' }
+          };
+          const tc = typeColors[l.type] || typeColors.info;
+
+          const numClass = !isUnlocked ? 'num-locked' : isCompleted ? 'num-done' : tc.num;
+          const numContent = !isUnlocked ? '🔒' : isCompleted ? '✓' : tc.label;
+
+          const unlockDateMsg = !isUnlocked ? (() => {
+            const d = new Date();
+            d.setDate(d.getDate() + (index - (unlockedCount - 1)));
+            return `${d.getMonth()+1}/${d.getDate()} 解放予定`;
+          })() : '';
+
+          html += `
+            <div class="lecture-card${!isUnlocked ? ' locked' : ''}${isCompleted ? ' completed' : ''}"
+                 onclick="${isUnlocked ? `openLecture('${l.id}')` : ''}">
+              <div class="lecture-num ${numClass}">${numContent}</div>
+              <div class="lecture-info">
+                <div class="lecture-type-badge ${isUnlocked ? tc.badge : ''}">${isUnlocked ? tc.badgeText : 'ロック中'}</div>
+                <div class="lecture-title${!isUnlocked ? ' locked-title' : ''}">${l.title}</div>
+                ${!isUnlocked ? `<div class="lecture-unlock-date">${unlockDateMsg}</div>` : ''}
+              </div>
+              ${isUnlocked ? `<div class="lecture-arrow">${isCompleted ? '✓' : '›'}</div>` : ''}
+            </div>`;
+        });
+        html += '</div>';
+      });
+
+      list.innerHTML = html;
+    }
+
+    function openLecture(lectureId) {
+      const lecture = LECTURES.find(l => l.id === lectureId);
+      if (lecture) openModal(lecture, true);
+    }
+
+    (async () => {
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) { window.location.href = 'index.html'; return; }
+      currentUser = user;
+
+      const [unlockedCount, answers, qmemosRes] = await Promise.all([
+        getUnlockedCount(),
+        loadWorkAnswers(),
+        sb.from('question_memos').select('lecture_id, question, created_at').eq('user_id', user.id).order('created_at')
+      ]);
+      workAnswers = answers;
+      window._qmemos = qmemosRes.data || [];
+      await renderLectures(unlockedCount, answers);
+    })();
+  </script>
+</body>
+</html>

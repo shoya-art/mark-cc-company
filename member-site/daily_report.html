@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>日報 | リリー</title>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      background: #fdf5f5;
+      color: #333;
+      min-height: 100vh;
+      padding-bottom: 100px;
+    }
+
+    .header {
+      background: #fff;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      border-bottom: 1px solid #f5e5e5;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .back-btn {
+      width: 36px; height: 36px;
+      background: #fdf5f5;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 18px; color: #e95f5f;
+      border: none; flex-shrink: 0;
+    }
+    .header h1 { font-size: 16px; font-weight: 700; color: #333; }
+
+    .content { padding: 24px 20px; max-width: 480px; margin: 0 auto; }
+
+    .date-badge {
+      display: inline-block;
+      background: #fff;
+      border: 1.5px solid #f5c0c0;
+      color: #e95f5f;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+    }
+
+    /* Already done */
+    .already-done {
+      background: linear-gradient(135deg, #e8f5e9, #f5fff5);
+      border: 1.5px solid #a8d8a8;
+      border-radius: 16px;
+      padding: 16px 18px;
+      text-align: center;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .already-done p { color: #66bb6a; font-size: 13px; font-weight: 700; }
+
+    /* Section cards */
+    .section-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 22px 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 12px rgba(233,95,95,0.06);
+    }
+    .section-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      letter-spacing: .5px;
+    }
+    .badge-daily { background: #fff0f3; color: #e95f5f; }
+    .badge-weekly { background: #fff8e1; color: #f59f00; }
+    .badge-biweekly { background: #f0f5ff; color: #7090c0; }
+
+    .section-label {
+      font-size: 15px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 4px;
+      line-height: 1.5;
+    }
+    .section-desc { font-size: 12px; color: #bbb; margin-bottom: 14px; }
+
+    .field-group { margin-bottom: 14px; }
+    .field-label {
+      font-size: 13px;
+      color: #888;
+      font-weight: 500;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    textarea, .text-input {
+      width: 100%;
+      background: #fdf5f5;
+      border: 2px solid #f5e5e5;
+      border-radius: 12px;
+      color: #333;
+      font-size: 14px;
+      font-family: inherit;
+      padding: 12px 14px;
+      resize: none;
+      outline: none;
+      line-height: 1.8;
+      transition: border-color .2s;
+      -webkit-appearance: none;
+    }
+    textarea:focus, .text-input:focus { border-color: #e95f5f; }
+    textarea::placeholder, .text-input::placeholder { color: #ccc; }
+
+    /* Score selectors */
+    .score-selector { margin-bottom: 14px; }
+    .score-selector-label { font-size: 13px; color: #888; margin-bottom: 8px; font-weight: 500; }
+    .score-btns-row { display: flex; gap: 6px; }
+    .score-btn {
+      flex: 1;
+      height: 38px;
+      border-radius: 10px;
+      border: 2px solid #f5e5e5;
+      background: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      color: #ccc;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .2s;
+      font-family: inherit;
+    }
+    .score-btn.selected {
+      background: #e95f5f;
+      border-color: #e95f5f;
+      color: #fff;
+    }
+    .score-scale {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #ccc;
+      margin-top: 4px;
+      padding: 0 2px;
+    }
+
+    /* Weekly notice */
+    .weekly-notice {
+      background: linear-gradient(135deg, #fff8e1, #fffdf0);
+      border: 1.5px solid #ffe082;
+      border-radius: 14px;
+      padding: 12px 16px;
+      font-size: 12px;
+      color: #f59f00;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 18px;
+      background: linear-gradient(135deg, #e95f5f, #d44a4a);
+      color: #fff;
+      border: none;
+      border-radius: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+      letter-spacing: .5px;
+    }
+    .btn:hover { opacity: .88; }
+    .btn:active { transform: scale(.98); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    .done-screen {
+      display: none;
+      text-align: center;
+      padding: 60px 20px;
+    }
+    .done-icon { font-size: 72px; margin-bottom: 20px; }
+    .done-title { font-size: 22px; font-weight: 700; margin-bottom: 10px; }
+    .done-sub { font-size: 14px; color: #999; line-height: 1.8; margin-bottom: 32px; }
+    .done-btn {
+      display: inline-block;
+      padding: 16px 40px;
+      background: linear-gradient(135deg, #e95f5f, #d44a4a);
+      color: #fff;
+      border-radius: 16px;
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="header">
+    <button class="back-btn" onclick="window.location.href='dashboard.html'">←</button>
+    <h1>日報を書く</h1>
+  </div>
+
+  <div class="content" id="form-content">
+    <div class="date-badge" id="date-badge"></div>
+    <div class="already-done" id="already-done-msg">
+      <p>✅ 今日の日報は送信済みです。更新できます。</p>
+    </div>
+
+    <!-- 毎日の項目 -->
+    <div class="section-card">
+      <div class="section-badge badge-daily">毎日</div>
+      <div class="section-label">3つの良かったこと</div>
+      <div class="section-desc">どんな小さなことでもOK。今日のポジティブを見つけよう</div>
+
+      <div class="field-group">
+        <div class="field-label">🌸 1つ目</div>
+        <textarea id="good1" rows="2" placeholder="例：コーヒーが美味しかった"></textarea>
+      </div>
+      <div class="field-group">
+        <div class="field-label">🌸 2つ目</div>
+        <textarea id="good2" rows="2" placeholder="例：友達から連絡がきた"></textarea>
+      </div>
+      <div class="field-group">
+        <div class="field-label">🌸 3つ目</div>
+        <textarea id="good3" rows="2" placeholder="例：ワークに取り組めた"></textarea>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-badge badge-daily">毎日</div>
+      <div class="section-label">自分を褒めたこと</div>
+      <div class="section-desc">今日の自分を認めてあげよう</div>
+      <textarea id="self_praise" rows="3" placeholder="例：気持ちが落ちてたけど講義を見ようとした自分を褒めたい"></textarea>
+    </div>
+
+    <div class="section-card">
+      <div class="section-badge badge-daily">毎日</div>
+      <div class="section-label">復縁に向けて取り組んだこと</div>
+      <div class="section-desc">行動できたこと、考えたことを記録</div>
+      <textarea id="action_toward" rows="3" placeholder="例：講義を1本見た、ワークの回答を書いた"></textarea>
+    </div>
+
+    <div class="section-card">
+      <div class="section-badge badge-daily">毎日</div>
+      <div class="section-label">昨日の自分から少しでも成長したこと</div>
+      <div class="section-desc">どんな小さな成長でも価値があるよ</div>
+      <textarea id="growth" rows="3" placeholder="例：ネガティブな気持ちに気づいて、すぐに切り替えられた"></textarea>
+    </div>
+
+    <!-- 週1の項目 -->
+    <div class="section-card" id="weekly-section">
+      <div class="weekly-notice">⭐ 週1回の振り返り</div>
+      <div class="section-badge badge-weekly">週1</div>
+      <div class="section-label">今週の自己肯定感</div>
+      <div class="section-desc">10点満点で自己採点してね</div>
+
+      <div class="score-selector">
+        <div class="score-selector-label">自己肯定感スコア</div>
+        <div class="score-btns-row" id="self-esteem-btns"></div>
+        <div class="score-scale"><span>低い</span><span>高い</span></div>
+      </div>
+
+      <div class="section-label" style="margin-top:18px">復縁に対する前向きさ</div>
+      <div class="section-desc" style="margin-top:4px">10点満点中何点？</div>
+      <div class="score-selector">
+        <div class="score-btns-row" id="positive-btns"></div>
+        <div class="score-scale"><span>後ろ向き</span><span>前向き</span></div>
+      </div>
+    </div>
+
+    <!-- 2週に1回の項目 -->
+    <div class="section-card" id="biweekly-section">
+      <div class="section-badge badge-biweekly">2週に1回</div>
+      <div class="section-label">復縁を途中で諦めそうになった瞬間</div>
+      <div class="section-desc">※あれば。ないならスキップOK</div>
+      <textarea id="give_up_moment" rows="3" placeholder="なければ空白でOK"></textarea>
+
+      <div class="section-label" style="margin-top:18px">誰にも言えない弱音</div>
+      <div class="section-desc" style="margin-top:4px">とにかく書き出してOK。ここだけの話</div>
+      <textarea id="weak_point" rows="4" placeholder="ここに書いたことはジローだけが見ます。思ったことを正直に。"></textarea>
+    </div>
+
+    <button class="btn" id="submit-btn" onclick="submitReport()">日報を送る 📝</button>
+  </div>
+
+  <div class="done-screen" id="done-screen">
+    <div class="done-icon">📝</div>
+    <div class="done-title">日報を送りました</div>
+    <div class="done-sub">
+      今日も正直に向き合ってくれてありがとう。<br>
+      毎日少しずつ、確実に成長しているよ。
+    </div>
+    <a class="done-btn" href="dashboard.html">ホームへ戻る</a>
+  </div>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script>
+    const { createClient } = window.supabase;
+    const sb = createClient(
+      'https://ejcajjtptbrcwmgzqhjz.supabase.co',
+      'sb_publishable_LF8EU4bFZpegd6wZPXGynQ_j_nkEGdP'
+    );
+
+    let userId = null;
+    let alreadyDone = false;
+    const scores = { self_esteem: null, positive: null };
+
+    function getDateStr(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function buildScoreBtns(containerId, field) {
+      const container = document.getElementById(containerId);
+      for (let i = 1; i <= 10; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'score-btn';
+        btn.textContent = i;
+        btn.onclick = () => {
+          scores[field] = i;
+          container.querySelectorAll('.score-btn').forEach((b, idx) => {
+            b.classList.toggle('selected', idx + 1 === i);
+          });
+        };
+        container.appendChild(btn);
+      }
+    }
+
+    function setScoreVal(field, val) {
+      scores[field] = val;
+      const containerId = field === 'self_esteem' ? 'self-esteem-btns' : 'positive-btns';
+      document.getElementById(containerId).querySelectorAll('.score-btn').forEach((b, idx) => {
+        b.classList.toggle('selected', idx + 1 === val);
+      });
+    }
+
+    // ページ読み込み
+    (async () => {
+      buildScoreBtns('self-esteem-btns', 'self_esteem');
+      buildScoreBtns('positive-btns', 'positive');
+
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) { window.location.href = 'index.html'; return; }
+      userId = user.id;
+
+      const today = new Date();
+      const dayOfWeek = ['日','月','火','水','木','金','土'][today.getDay()];
+      document.getElementById('date-badge').textContent =
+        `${today.getMonth()+1}月${today.getDate()}日（${dayOfWeek}）`;
+
+      const todayStr = getDateStr(today);
+      const { data: existing } = await sb.from('daily_reports')
+        .select('*').eq('user_id', userId).eq('date', todayStr).single();
+
+      if (existing) {
+        alreadyDone = true;
+        document.getElementById('already-done-msg').style.display = 'block';
+        document.getElementById('good1').value = existing.good1 || '';
+        document.getElementById('good2').value = existing.good2 || '';
+        document.getElementById('good3').value = existing.good3 || '';
+        document.getElementById('self_praise').value = existing.self_praise || '';
+        document.getElementById('action_toward').value = existing.action_toward || '';
+        document.getElementById('growth').value = existing.growth || '';
+        document.getElementById('give_up_moment').value = existing.give_up_moment || '';
+        document.getElementById('weak_point').value = existing.weak_point || '';
+        if (existing.self_esteem_score) setScoreVal('self_esteem', existing.self_esteem_score);
+        if (existing.positive_score) setScoreVal('positive', existing.positive_score);
+        document.getElementById('submit-btn').textContent = '更新する 📝';
+      }
+    })();
+
+    async function submitReport() {
+      const good1 = document.getElementById('good1').value.trim();
+      if (!good1) { alert('「3つの良かったこと」の1つ目は入力してください'); return; }
+
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true;
+      btn.textContent = '送信中...';
+
+      const today = new Date();
+      const record = {
+        user_id: userId,
+        date: getDateStr(today),
+        good1,
+        good2: document.getElementById('good2').value.trim() || null,
+        good3: document.getElementById('good3').value.trim() || null,
+        self_praise: document.getElementById('self_praise').value.trim() || null,
+        action_toward: document.getElementById('action_toward').value.trim() || null,
+        growth: document.getElementById('growth').value.trim() || null,
+        give_up_moment: document.getElementById('give_up_moment').value.trim() || null,
+        weak_point: document.getElementById('weak_point').value.trim() || null,
+        self_esteem_score: scores.self_esteem,
+        positive_score: scores.positive
+      };
+
+      const { error } = alreadyDone
+        ? await sb.from('daily_reports').update(record).eq('user_id', userId).eq('date', record.date)
+        : await sb.from('daily_reports').insert(record);
+
+      if (error) {
+        console.error(error);
+        alert('送信に失敗しました。もう一度お試しください。');
+        btn.disabled = false;
+        btn.textContent = alreadyDone ? '更新する 📝' : '日報を送る 📝';
+        return;
+      }
+
+      document.getElementById('form-content').style.display = 'none';
+      document.getElementById('done-screen').style.display = 'block';
+    }
+  </script>
+</body>
+</html>
