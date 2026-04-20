@@ -26,21 +26,20 @@ def generate_post(time_slot: str, repo_root: str = ".") -> tuple:
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
     base = f"{repo_root}/.company/marketing/content-plan/threads-learning"
-    winning_patterns = read_file_safe(f"{base}/winning-patterns.md")
-    hypotheses = read_file_safe(f"{base}/hypotheses.md")
+    source_posts = read_file_safe(f"{base}/source-posts.md")
 
     slot_config = {
         "morning": {
             "time": "朝の通勤時間帯（7:50 JST）",
-            "header_priority": "反転断言型または女性讃歌型を優先（朝は保存・拡散向きが伸びる）",
+            "tier_hint": "Tier1・Tier2を優先（保存・拡散向き）",
         },
         "lunch": {
             "time": "昼休み（12:20 JST）",
-            "header_priority": "罪悪感反転型を優先（昼はコンサル導線に最適）",
+            "tier_hint": "Tier3・Tier4を優先（共感・コメント誘導向き）",
         },
         "evening": {
             "time": "夜のリラックスタイム（21:30 JST）",
-            "header_priority": "問いかけ＋段階解説型を優先（夜はコメント誘導が効果的）",
+            "tier_hint": "コメント誘導型を優先（A2・E1・E2系）",
         },
     }
     config = slot_config.get(time_slot, slot_config["morning"])
@@ -48,50 +47,33 @@ def generate_post(time_slot: str, repo_root: str = ".") -> tuple:
     prompt = f"""復縁アドバイザー・ジロー（@ziro_fukuen_pro）のThreads投稿を1本書いてください。
 
 【時間帯】{config["time"]}
-【優先する型】{config["header_priority"]}
-
-=== 参考（勝ちパターン） ===
-{winning_patterns if winning_patterns else "（ファイルなし）"}
-
-=== 今週の仮説 ===
-{hypotheses if hypotheses else "（ファイルなし）"}
+【今回の優先元ネタ】{config["tier_hint"]}
 
 ---
 
-【文体の絶対ルール】
+以下は実際にThreadsで伸びた投稿のリストです。
+この中から1つ選び、ジローの口調でリライトしてください。
 
-実際に伸びた投稿の例（このトーンを完全に真似る）:
-
-例1:
-「復縁を諦めるな
-周りの声なんか気にするな
-2人はきっとまた結ばれるから」
-
-例2:
-「何となく気付いてしまった復縁の真理」を教えてください。
+{source_posts if source_posts else "（ファイルなし）"}
 
 ---
 
-このトーンから読み取れるルール:
-- です・ます禁止。「だ」「だよ」「から」で終わる
-- ——（ダッシュ）禁止
-- 「土台」「本質」「不安の確認作業」などの概念語禁止
-- 「相談者さん」禁止
-- 1文を短く。改行多め
-- 体験や感情を直球で書く。説明しない
-- 100〜200文字以内（短いほど良い）
-- 「です・ます」で書き直したくなったら失敗
+【リライトのルール】
 
-コメント誘導する場合は「〜を教えてください」か「コメントで教えて」をラフに入れる。
-
-【NG表現】
-- 「頑張れば」「自己肯定感を高めれば」「まずは自分磨き」
-- 「〜なのです」「〜でしょうか」「〜ましょう」
-- 「業者っぽい」「広告っぽい」と感じる一切の表現
+1. 元ネタの「構造・フレーム」だけを借りる。フレーズの丸コピ禁止
+2. ジローはアドバイザー視点で話す（「復縁サポートしてきた経験から」「相談者さんから聞いた話」など）
+3. 文体ルール（絶対守る）:
+   - です・ます禁止。「だ」「だよ」「から」「よ」で終わる
+   - ——（ダッシュ）禁止
+   - 概念語禁止（「土台」「本質」「自己肯定感の向上」など説明っぽい言葉）
+   - 1文を短く。改行多め
+   - 100〜200文字以内（短いほど良い）
+4. コメント誘導する場合: 「〜教えてください」「コメントで教えて」をラフに入れる
+5. NG: 「頑張れば」「まずは自分磨き」「〜なのです」「業者っぽい表現」
 
 ---
 
-以下の形式だけで返してください（説明不要）:
+以下の形式だけで返してください（説明・前置き不要）:
 ---POST_START---
 （投稿テキストのみ）
 ---POST_END---
@@ -99,7 +81,7 @@ def generate_post(time_slot: str, repo_root: str = ".") -> tuple:
 （ラフさ・人間味の採点、10点満点で数値のみ）
 ---SCORE_END---
 ---HEADER_TYPE---
-（使用したヘッダー型名のみ）
+（参照した元ネタのID、例: B1）
 ---HEADER_TYPE_END---"""
 
     response = client.messages.create(
