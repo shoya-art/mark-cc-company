@@ -1,0 +1,68 @@
+name: Threads自動投稿
+
+on:
+  schedule:
+    - cron: '50 22 * * 0-4'  # 月〜金 7:50 JST (= 日〜木 22:50 UTC)
+    - cron: '20 3 * * 1-5'   # 月〜金 12:20 JST
+    - cron: '30 12 * * 1-5'  # 月〜金 21:30 JST
+  workflow_dispatch:
+    inputs:
+      time_slot:
+        description: '投稿時間帯'
+        required: true
+        default: 'morning'
+        type: choice
+        options:
+          - morning
+          - lunch
+          - evening
+
+permissions:
+  contents: write
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install anthropic
+
+      - name: Determine time slot
+        id: slot
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "slot=${{ github.event.inputs.time_slot }}" >> $GITHUB_OUTPUT
+          else
+            HOUR=$(date -u +%H)
+            if [ "$HOUR" = "22" ]; then
+              echo "slot=morning" >> $GITHUB_OUTPUT
+            elif [ "$HOUR" = "03" ]; then
+              echo "slot=lunch" >> $GITHUB_OUTPUT
+            else
+              echo "slot=evening" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Post to Threads
+        run: python scripts/threads_post.py ${{ steps.slot.outputs.slot }} .
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+
+      - name: Commit log
+        run: |
+          git config user.name "Threads Bot"
+          git config user.email "bot@github.com"
+          git add .company/marketing/content-plan/threads-log.md
+          git diff --staged --quiet || git commit -m "📝 Threads投稿ログ更新 $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M JST')"
+          git push
