@@ -42,7 +42,54 @@
       border-radius: 10px;
     }
 
-    .content { padding: 20px; max-width: 900px; margin: 0 auto; }
+    .content { padding: 20px; max-width: 1000px; margin: 0 auto; }
+
+    /* 会員記録フィード（一括閲覧） */
+    .feed-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+    .feed-tab {
+      background: #fdf5f5;
+      border: 1.5px solid #f5c0c0;
+      color: #888;
+      padding: 8px 14px;
+      border-radius: 12px;
+      font-size: 12px;
+      cursor: pointer;
+      font-weight: 700;
+      font-family: inherit;
+    }
+    .feed-tab.active {
+      background: #e95f5f;
+      border-color: #e95f5f;
+      color: #fff;
+    }
+    .feed-panel { display: none; }
+    .feed-panel.active { display: block; }
+    .feed-hint {
+      font-size: 12px; color: #888; line-height: 1.65; margin-bottom: 14px;
+      padding: 12px 14px; background: #fdf5f5; border-radius: 12px;
+      border: 1px solid #f5e5e5;
+    }
+    .feed-hint code { color: #c45a5a; font-size: 11px; }
+    .feed-card {
+      background: #fdf5f5;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      border: 1px solid #f5e5e5;
+    }
+    .feed-meta {
+      font-size: 11px; color: #aaa;
+      margin-bottom: 8px;
+      display: flex; flex-wrap: wrap; gap: 8px 14px;
+    }
+    .feed-meta strong { color: #666; }
+    .feed-body {
+      font-size: 13px; color: #444;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .feed-title { font-size: 13px; font-weight: 700; color: #e95f5f; margin-bottom: 6px; }
 
     /* Overview */
     .overview { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
@@ -236,6 +283,27 @@
       </div>
     </div>
 
+    <!-- 会員の記録を一括で見る -->
+    <div class="section" id="member-feed-section">
+      <div class="section-title">会員の記録を一括で見る</div>
+      <p style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.65">
+        チェックイン（スライダー＋メモ）・<strong>日報</strong>（<code>daily_reports</code> の本文）・ワーク回答・講義メモ・復縁日記を、全会員分まとめて表示します。
+      </p>
+      <div class="feed-tabs" id="feed-tabs">
+        <button type="button" class="feed-tab active" data-tab="checkin">チェックイン</button>
+        <button type="button" class="feed-tab" data-tab="daily">日報（毎日）</button>
+        <button type="button" class="feed-tab" data-tab="work">ワーク回答</button>
+        <button type="button" class="feed-tab" data-tab="memo">講義メモ（全件）</button>
+        <button type="button" class="feed-tab" data-tab="diary">復縁日記</button>
+      </div>
+      <div id="feed-hint-box"></div>
+      <div class="feed-panel active" id="panel-checkin"></div>
+      <div class="feed-panel" id="panel-daily"></div>
+      <div class="feed-panel" id="panel-work"></div>
+      <div class="feed-panel" id="panel-memo"></div>
+      <div class="feed-panel" id="panel-diary"></div>
+    </div>
+
     <!-- お知らせ投稿 -->
     <div class="section">
       <div class="section-title">ジローからのお知らせ</div>
@@ -290,6 +358,7 @@
     </div>
   </div>
 
+  <script src="lectures-data.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script>
     const { createClient } = window.supabase;
@@ -301,6 +370,218 @@
     const ADMIN_EMAIL = 'shoyaaaaaa1127@gmail.com';
     const GOAL_LABELS = { reconnect: '復縁したい', next_love: '次の恋愛', closure: '納得できる終わり' };
     const GOAL_CLASSES = { reconnect: 'goal-reconnect', next_love: 'goal-next_love', closure: 'goal-closure' };
+    const LECTURE_LIST = typeof LECTURES !== 'undefined' && Array.isArray(LECTURES) ? LECTURES : [];
+
+    function esc(s) {
+      if (s == null || s === '') return '';
+      const el = document.createElement('div');
+      el.textContent = String(s);
+      return el.innerHTML;
+    }
+
+    function escAttr(s) {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function lectureTitle(id) {
+      const lec = LECTURE_LIST.find(l => l.id === id);
+      return lec ? lec.title : id;
+    }
+
+    function formatWorkAnswer(raw) {
+      if (!raw) return '(空)';
+      let j;
+      try { j = JSON.parse(raw); } catch { return String(raw); }
+      if (j.answers && Array.isArray(j.answers)) {
+        return j.answers.map((a, i) => `【問${i + 1}】\n${a || '（未入力）'}`).join('\n\n');
+      }
+      if (j.scores && Array.isArray(j.scores)) {
+        const t = j.total != null ? `合計: ${j.total}` : '';
+        return `チェックリスト回答\n${j.scores.map((n, i) => `${i + 1}. ${n}点`).join(' / ')}\n${t}`;
+      }
+      if (j.checked && Array.isArray(j.checked)) {
+        const note = j.note ? `\nメモ:\n${j.note}` : '';
+        return `チェック数: ${j.count ?? ''}${note}`;
+      }
+      if (j.scene0 !== undefined || Object.keys(j).some(k => k.startsWith('scene'))) {
+        return JSON.stringify(j, null, 2);
+      }
+      if (j.row0 !== undefined || Object.keys(j).some(k => k.startsWith('row'))) {
+        return JSON.stringify(j, null, 2);
+      }
+      return JSON.stringify(j, null, 2);
+    }
+
+    function formatDailyReportRow(r) {
+      const pairs = [
+        ['良かったこと①', r.good1],
+        ['良かったこと②', r.good2],
+        ['良かったこと③', r.good3],
+        ['自分を褒める', r.self_praise],
+        ['今日の行動', r.action_toward],
+        ['成長メモ', r.growth],
+        ['自己肯定スコア（1〜10）', r.self_esteem_score],
+        ['ポジティブスコア（1〜10）', r.positive_score],
+        ['諦めそうになった瞬間', r.give_up_moment],
+        ['弱み・改善したい点', r.weak_point],
+      ];
+      const lines = [];
+      for (const [label, val] of pairs) {
+        if (val != null && String(val).trim() !== '') lines.push(`${label}\n${String(val).trim()}`);
+      }
+      return lines.length ? lines.join('\n\n') : '（本文の入力がまだありません）';
+    }
+
+    function memberLabel(map, userId) {
+      const p = map[userId];
+      if (!p) return esc(userId);
+      const name = (p.name || '').trim();
+      const email = (p.email || '').trim();
+      if (name && email) return esc(name) + ' <span style="color:#aaa">' + esc(email) + '</span>';
+      if (email) return esc(email);
+      return esc(userId);
+    }
+
+    function renderFeedHint(errors) {
+      const parts = [];
+      if (errors.work) parts.push('ワーク: <code>work_answers</code> の読み取り（管理者 RLS）を確認してください。');
+      if (errors.memo) parts.push('講義メモ一覧: <code>question_memos</code> の読み取りを確認してください。');
+      if (errors.diary) parts.push('復縁日記: <code>diary_entries</code> テーブルまたは RLS を確認してください。');
+      if (errors.daily) parts.push('日報本文: <code>daily_reports</code> の全文取得に失敗しました。');
+      const hint = document.getElementById('feed-hint-box');
+      if (!parts.length) { hint.innerHTML = ''; return; }
+      hint.innerHTML = '<div class="feed-hint">一部のデータが読み込めませんでした。<br>' + parts.join('<br>') + '</div>';
+    }
+
+    function bindFeedTabs() {
+      document.getElementById('feed-tabs').addEventListener('click', (e) => {
+        const btn = e.target.closest('.feed-tab');
+        if (!btn) return;
+        const tab = btn.dataset.tab;
+        document.querySelectorAll('.feed-tab').forEach(b => b.classList.toggle('active', b === btn));
+        document.querySelectorAll('.feed-panel').forEach(p => p.classList.remove('active'));
+        document.getElementById('panel-' + tab).classList.add('active');
+      });
+    }
+
+    function renderMemberFeeds(profileMap, allCheckins, waRes, diRes, drRes, memosAllRes) {
+      const feedErrors = {
+        work: !!(waRes.error),
+        memo: !!(memosAllRes.error),
+        diary: !!(diRes.error),
+        daily: !!(drRes.error),
+      };
+      renderFeedHint(feedErrors);
+
+      const sortedCheckins = [...(allCheckins || [])].sort((a, b) => {
+        const c = String(b.date).localeCompare(String(a.date));
+        if (c !== 0) return c;
+        const ea = (profileMap[a.user_id]?.email || '');
+        const eb = (profileMap[b.user_id]?.email || '');
+        return ea.localeCompare(eb);
+      });
+
+      const elCheckin = document.getElementById('panel-checkin');
+      if (!sortedCheckins.length) {
+        elCheckin.innerHTML = '<p class="no-data" style="padding:12px;text-align:center">チェックインの記録がありません</p>';
+      } else {
+        elCheckin.innerHTML = sortedCheckins.map(c => `
+          <div class="feed-card">
+            <div class="feed-meta">
+              <span><strong>日付</strong> ${esc(c.date)}</span>
+              <span><strong>会員</strong> ${memberLabel(profileMap, c.user_id)}</span>
+              <span><strong>気分/行動/前向き</strong> ${esc(c.mood)} / ${esc(c.action)} / ${esc(c.state)}</span>
+            </div>
+            ${c.note ? `<div class="feed-body">${esc(c.note)}</div>` : '<div class="feed-body" style="color:#bbb">（メモなし）</div>'}
+          </div>
+        `).join('');
+      }
+
+      const elDaily = document.getElementById('panel-daily');
+      if (drRes.error || !drRes.data || !drRes.data.length) {
+        elDaily.innerHTML = drRes.error
+          ? '<p class="no-data" style="padding:12px;text-align:center">日報（daily_reports）を取得できません。</p>'
+          : '<p class="no-data" style="padding:12px;text-align:center">日報の記録がありません</p>';
+      } else {
+        const sortedDaily = [...drRes.data].sort((a, b) => {
+          const c = String(b.date).localeCompare(String(a.date));
+          if (c !== 0) return c;
+          const ea = (profileMap[a.user_id]?.email || '');
+          const eb = (profileMap[b.user_id]?.email || '');
+          return ea.localeCompare(eb);
+        });
+        elDaily.innerHTML = sortedDaily.map(r => `
+          <div class="feed-card">
+            <div class="feed-meta">
+              <span><strong>日付</strong> ${esc(r.date)}</span>
+              <span><strong>会員</strong> ${memberLabel(profileMap, r.user_id)}</span>
+              <span><strong>更新</strong> ${esc(r.updated_at || r.created_at || '')}</span>
+            </div>
+            <div class="feed-body">${esc(formatDailyReportRow(r))}</div>
+          </div>
+        `).join('');
+      }
+
+      const elWork = document.getElementById('panel-work');
+      if (waRes.error || !waRes.data || !waRes.data.length) {
+        elWork.innerHTML = waRes.error
+          ? '<p class="no-data" style="padding:12px;text-align:center">ワーク回答を取得できません。</p>'
+          : '<p class="no-data" style="padding:12px;text-align:center">ワーク回答の記録がありません</p>';
+      } else {
+        elWork.innerHTML = waRes.data.map(r => `
+          <div class="feed-card">
+            <div class="feed-title">${esc(lectureTitle(r.lecture_id))}</div>
+            <div class="feed-meta">
+              <span><strong>会員</strong> ${memberLabel(profileMap, r.user_id)}</span>
+              <span><strong>講義ID</strong> ${esc(r.lecture_id)}</span>
+              <span><strong>更新</strong> ${esc(r.updated_at || r.created_at || '')}</span>
+            </div>
+            <div class="feed-body">${esc(formatWorkAnswer(r.answer))}</div>
+          </div>
+        `).join('');
+      }
+
+      const elMemo = document.getElementById('panel-memo');
+      if (memosAllRes.error || !memosAllRes.data || !memosAllRes.data.length) {
+        elMemo.innerHTML = memosAllRes.error
+          ? '<p class="no-data" style="padding:12px;text-align:center">講義メモ一覧を取得できません。</p>'
+          : '<p class="no-data" style="padding:12px;text-align:center">講義メモはまだありません</p>';
+      } else {
+        elMemo.innerHTML = memosAllRes.data.map(m => `
+          <div class="feed-card">
+            <div class="feed-title">${esc(lectureTitle(m.lecture_id))}${m.is_answered ? ' <span style="color:#5cb87a;font-size:11px">（回答済）</span>' : ''}</div>
+            <div class="feed-meta">
+              <span><strong>会員</strong> ${memberLabel(profileMap, m.user_id)}</span>
+              <span><strong>日時</strong> ${esc(m.created_at)}</span>
+            </div>
+            <div class="feed-body">${esc(m.question)}</div>
+          </div>
+        `).join('');
+      }
+
+      const elDiary = document.getElementById('panel-diary');
+      if (diRes.error || !diRes.data || !diRes.data.length) {
+        elDiary.innerHTML = diRes.error
+          ? '<p class="no-data" style="padding:12px;text-align:center">復縁日記を取得できません。</p>'
+          : '<p class="no-data" style="padding:12px;text-align:center">復縁日記の記録がありません</p>';
+      } else {
+        elDiary.innerHTML = diRes.data.map(d => `
+          <div class="feed-card">
+            <div class="feed-meta">
+              <span><strong>日付</strong> ${esc(d.date)}</span>
+              <span><strong>会員</strong> ${memberLabel(profileMap, d.user_id)}</span>
+              <span><strong>更新</strong> ${esc(d.updated_at || d.created_at || '')}</span>
+            </div>
+            <div class="feed-body">${esc(d.content)}</div>
+          </div>
+        `).join('');
+      }
+    }
 
     function getDateStr(d) {
       const y = d.getFullYear();
@@ -349,11 +630,11 @@
       list.innerHTML = data.map(n => `
         <div class="notice-list-item">
           <div style="flex:1">
-            <div class="notice-item-title">${n.is_pinned ? '📌 ' : ''}${n.title}</div>
-            <div class="notice-item-body">${n.body}</div>
-            <div class="notice-item-meta">${n.created_at.slice(0,10)}</div>
+            <div class="notice-item-title">${n.is_pinned ? '📌 ' : ''}${esc(n.title)}</div>
+            <div class="notice-item-body">${esc(n.body)}</div>
+            <div class="notice-item-meta">${esc(n.created_at.slice(0,10))}</div>
           </div>
-          <button class="notice-delete" onclick="deleteNotice('${n.id}')">削除</button>
+          <button class="notice-delete" onclick="deleteNotice('${escAttr(n.id)}')">削除</button>
         </div>`).join('');
     }
 
@@ -371,16 +652,16 @@
       section.style.display = 'block';
       document.getElementById('qmemo-count').textContent = `（${memos.length}件）`;
       document.getElementById('qmemo-list').innerHTML = memos.map(m => {
-        const memberName = profileMap[m.user_id]?.name || '不明';
+        const memberName = esc(profileMap[m.user_id]?.name || '不明');
         return `<div class="q-item">
           <div class="q-item-header">
-            <div class="q-item-lecture">講義 ${m.lecture_id}</div>
+            <div class="q-item-lecture">講義 ${esc(m.lecture_id)}</div>
             <div class="q-item-name">${memberName}</div>
           </div>
-          <div class="q-item-text">${m.question}</div>
+          <div class="q-item-text">${esc(m.question)}</div>
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <div style="font-size:11px;color:#bbb">${m.created_at.slice(0,10)}</div>
-            <button class="q-answer-btn" onclick="markAnswered('${m.id}')">回答済みにする</button>
+            <div style="font-size:11px;color:#bbb">${esc(m.created_at.slice(0,10))}</div>
+            <button class="q-answer-btn" onclick="markAnswered('${escAttr(m.id)}')">回答済みにする</button>
           </div>
         </div>`;
       }).join('');
@@ -401,15 +682,15 @@
 
       document.getElementById('modal-body').innerHTML = checkins.map(c => `
         <div class="checkin-item">
-          <div class="checkin-date">${c.date}</div>
+          <div class="checkin-date">${esc(c.date)}</div>
           <div class="checkin-scores">
-            <span>気分 <strong>${c.mood}</strong></span>
-            <span>行動 <strong>${c.action}</strong></span>
-            <span>前向き <strong>${c.state}</strong></span>
-            <span style="color:#e95f5f">平均 <strong>${((c.mood+c.action+c.state)/3).toFixed(1)}</strong></span>
+            <span>気分 <strong>${esc(c.mood)}</strong></span>
+            <span>行動 <strong>${esc(c.action)}</strong></span>
+            <span>前向き <strong>${esc(c.state)}</strong></span>
+            <span style="color:#e95f5f">平均 <strong>${((Number(c.mood)+Number(c.action)+Number(c.state))/3).toFixed(1)}</strong></span>
           </div>
-          ${c.tags && c.tags.length ? `<div class="checkin-tags">${c.tags.map(t => `<span class="checkin-tag">${t}</span>`).join('')}</div>` : ''}
-          ${c.note ? `<div class="checkin-note">"${c.note}"</div>` : ''}
+          ${c.tags && c.tags.length ? `<div class="checkin-tags">${c.tags.map(t => `<span class="checkin-tag">${esc(t)}</span>`).join('')}</div>` : ''}
+          ${c.note ? `<div class="checkin-note">${esc(c.note)}</div>` : ''}
         </div>
       `).join('');
     }
@@ -422,12 +703,16 @@
       }
 
       document.getElementById('admin-content').style.display = 'block';
+      bindFeedTabs();
       loadNotices();
 
-      const [profilesRes, checkinsRes, reportsRes] = await Promise.all([
+      const [profilesRes, checkinsRes, waRes, diRes, drFullRes, memosAllRes] = await Promise.all([
         sb.from('profiles').select('*').order('created_at', { ascending: false }),
-        sb.from('checkins').select('*'),
-        sb.from('daily_reports').select('user_id, date')
+        sb.from('checkins').select('*').order('date', { ascending: false }).limit(2000),
+        sb.from('work_answers').select('*').order('updated_at', { ascending: false }).limit(500),
+        sb.from('diary_entries').select('*').order('date', { ascending: false }).limit(300),
+        sb.from('daily_reports').select('*').order('date', { ascending: false }).limit(800),
+        sb.from('question_memos').select('*').order('created_at', { ascending: false }).limit(400),
       ]);
 
       const profiles = profilesRes.data || [];
@@ -435,7 +720,9 @@
       profiles.forEach(p => { profileMap[p.id] = p; });
       loadQuestionMemos(profileMap);
       const allCheckins = checkinsRes.data || [];
-      const allReports = reportsRes.data || [];
+      const allReports = drFullRes.data || [];
+
+      renderMemberFeeds(profileMap, allCheckins, waRes, diRes, drFullRes, memosAllRes);
 
       const total = profiles.length;
       document.getElementById('total-members').textContent = total;
@@ -467,35 +754,42 @@
 
       // Member table
       const tbody = document.getElementById('member-table');
+      tbody.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-detail]');
+        if (!btn) return;
+        showMemberDetail(btn.dataset.userId, btn.dataset.userName || '名前なし');
+      });
+
       if (profiles.length === 0) {
         tbody.innerHTML = '<tr><td colspan="8" class="no-data" style="padding:20px;text-align:center">会員がいません</td></tr>';
         return;
       }
 
-      // Report counts per user
+      // Report counts per user（日報件数＝ daily_reports の行数）
       const reportCounts = {};
       allReports.forEach(r => { reportCounts[r.user_id] = (reportCounts[r.user_id] || 0) + 1; });
 
       tbody.innerHTML = profiles.map(p => {
         const memberCheckins = allCheckins.filter(c => c.user_id === p.id);
         const checkinCount = memberCheckins.length;
-        const lastCheckin = memberCheckins.sort((a, b) => b.date.localeCompare(a.date))[0];
+        const lastCheckin = [...memberCheckins].sort((a, b) => String(b.date).localeCompare(String(a.date)))[0];
         const avgScore = checkinCount > 0
-          ? (memberCheckins.reduce((s, c) => s + (c.mood + c.action + c.state) / 3, 0) / checkinCount).toFixed(1)
+          ? (memberCheckins.reduce((s, c) => s + (Number(c.mood) + Number(c.action) + Number(c.state)) / 3, 0) / checkinCount).toFixed(1)
           : '-';
         const regDate = new Date(p.created_at).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
         const reportCount = reportCounts[p.id] || 0;
+        const dispName = (p.name || '名前なし').trim();
 
         return `
           <tr>
-            <td>${p.name || '<span class="no-data">未設定</span>'}</td>
-            <td>${p.goal ? `<span class="goal-tag ${GOAL_CLASSES[p.goal]}">${GOAL_LABELS[p.goal]}</span>` : '<span class="no-data">未設定</span>'}</td>
-            <td style="color:#aaa">${regDate}</td>
+            <td>${p.name ? esc(p.name) : '<span class="no-data">未設定</span>'}</td>
+            <td>${p.goal ? `<span class="goal-tag ${GOAL_CLASSES[p.goal]}">${esc(GOAL_LABELS[p.goal])}</span>` : '<span class="no-data">未設定</span>'}</td>
+            <td style="color:#aaa">${esc(regDate)}</td>
             <td style="font-weight:700;color:#e95f5f">${checkinCount}回</td>
             <td style="font-weight:700;color:#5cb87a">${reportCount}回</td>
-            <td style="color:#aaa">${lastCheckin ? lastCheckin.date : '<span class="no-data">なし</span>'}</td>
-            <td style="font-weight:700;color:#e95f5f">${avgScore}</td>
-            <td><button class="detail-btn" onclick="showMemberDetail('${p.id}','${p.name||'名前なし'}')">詳細</button></td>
+            <td style="color:#aaa">${lastCheckin ? esc(lastCheckin.date) : '<span class="no-data">なし</span>'}</td>
+            <td style="font-weight:700;color:#e95f5f">${esc(avgScore)}</td>
+            <td><button type="button" class="detail-btn" data-detail data-user-id="${escAttr(p.id)}" data-user-name="${escAttr(dispName)}">詳細</button></td>
           </tr>
         `;
       }).join('');
