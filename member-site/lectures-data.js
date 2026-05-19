@@ -13,7 +13,7 @@ const LECTURES = [
 
   // 第3章：自己肯定感を0に戻す
   { id: "3-1", chapter: "第3章", chapter_title: "自己肯定感を0に戻す", title: "自己肯定感ってそもそも何？", type: "video", url: "https://youtu.be/LoGUGkmimHE", order: 7 },
-  { id: "3-2", chapter: "第3章", chapter_title: "自己肯定感を0に戻す", title: "あなたの自己肯定感をチェックする", type: "video", url: "https://youtu.be/jlZfijAgewE", order: 8 },
+  { id: "3-2", chapter: "第3章", chapter_title: "自己肯定感を0に戻す", title: "あなたの自己肯定感をチェックする", type: "video", url: "https://youtu.be/jjZfijAgewE", order: 8 },
 
   {
     id: "3-3", chapter: "第3章", chapter_title: "自己肯定感を0に戻す",
@@ -228,7 +228,7 @@ const LECTURES = [
     ]
   },
 
-  { id: "4-13", chapter: "第4章", chapter_title: "自己肯定感をプラスにする", title: "彼との理想の未来を描いてみる", type: "video", url: "https://youtu.be/yn-PqJFqW6w", order: 29 },
+  { id: "4-13", chapter: "第4章", chapter_title: "自己肯定感をプラスにする", title: "彼との理想の未来を描いてみる", type: "video", url: "https://youtu.be/yn-PgJFqW6w", order: 29 },
 
   {
     id: "4-14", chapter: "第4章", chapter_title: "自己肯定感をプラスにする",

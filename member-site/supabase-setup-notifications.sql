@@ -1,0 +1,39 @@
+-- =============================================
+-- 会員アクション → Slack / LINE / Discord 通知
+-- =============================================
+-- 会員の保存・提出が Supabase に書き込まれたタイミングで、
+-- Edge Function `notify-staff` が外部へ通知します。
+-- （Webhook URL をフロントに埋め込まないため安全です）
+--
+-- 【手順概要】
+-- 1) CLI で関数をデプロイ（または Dashboard から作成してコードを貼り付け）
+--    supabase link --project-ref <your-project-ref>
+--    supabase secrets set STAFF_WEBHOOK_SECRET=<長いランダム文字列>
+--    supabase secrets set SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...   （任意）
+--    supabase secrets set LINE_NOTIFY_TOKEN=...   （任意・LINE Notify のトークン）
+--    supabase secrets set DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/... （任意）
+--    supabase functions deploy notify-staff
+--
+-- 2) Supabase Dashboard → Database → Webhooks で、次のテーブルごとに Webhook を作成
+--    URL: https://<project-ref>.supabase.co/functions/v1/notify-staff
+--    HTTP Headers に追加:
+--      x-staff-webhook-secret: （上記 STAFF_WEBHOOK_SECRET と同じ値）
+--    イベント:
+--      diary_entries      → INSERT, UPDATE
+--      question_memos     → INSERT
+--      lecture_views      → INSERT のみ（再視聴の UPDATE は通知しないよう Edge 側で無視）
+--      work_answers       → INSERT, UPDATE
+--      checkins           → INSERT, UPDATE
+--      daily_reports      → INSERT, UPDATE
+--
+-- 3) テスト: 会員アカウントで日記保存などを行い、Slack/LINE に届くか確認
+--
+-- 【LINE について】
+-- LINE Notify（個人トークへの通知）のトークンを LINE_NOTIFY_TOKEN に設定します。
+-- LINE Notify の新規発行終了などポリシーが変わる場合は、Slack のみ運用に切り替えてください。
+--
+-- 【講義完了について】
+-- lecture_views は「初回完了」の INSERT のみ通知します（同じ講義の upsert 更新では通知しません）。
+
+-- このファイルには実行必須の DDL はありません。
+-- 通知機能は Edge Function + Dashboard Webhook の設定で完結します。

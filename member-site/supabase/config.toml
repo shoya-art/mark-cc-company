@@ -1,0 +1,11 @@
+# Supabase CLI 用（Edge Functions の JWT 検証をオフにする）
+# Database Webhooks から呼ぶ場合、JWT は付かないため verify_jwt = false が必要です。
+# project_ref はダッシュボード URL（app.supabase.com/project/＜ここ＞）と一致させます。
+project_id = "ejcajjtptbrcwmgzqhjz"
+
+[functions.notify-staff]
+verify_jwt = false
+
+# Database Webhook から呼ぶ（JWT なし）
+[functions.notify-instructor]
+verify_jwt = false

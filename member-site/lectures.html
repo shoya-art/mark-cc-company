@@ -639,8 +639,23 @@
       document.getElementById('modal').classList.add('open');
     }
 
+    /** 講義完了を lecture_views に保存（動画の「視聴完了」もワーク提出後も共通）。Webhook / LINE はここ経由。 */
+    async function upsertLectureViewRecord(lectureId) {
+      const row = {
+        user_id: currentUser.id,
+        lecture_id: lectureId,
+        viewed_at: new Date().toISOString(),
+      };
+      return await sb.from('lecture_views').upsert(row, { onConflict: 'user_id,lecture_id' });
+    }
+
     async function markViewed(lectureId) {
-      await sb.from('lecture_views').upsert({ user_id: currentUser.id, lecture_id: lectureId }, { onConflict: 'user_id,lecture_id' });
+      const { error } = await upsertLectureViewRecord(lectureId);
+      if (error) {
+        console.error('lecture_views (markViewed)', error);
+        alert('視聴完了の保存に失敗しました。ネットワーク・ログイン状態を確認してください。\n' + (error.message || ''));
+        return;
+      }
       closeModal();
       const [unlocked, answers] = await Promise.all([getUnlockedCount(), loadWorkAnswers()]);
       workAnswers = answers;
@@ -841,6 +856,18 @@
       if (error) {
         alert('送信に失敗しました');
         if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'ワークを提出する ✨'; }
+        return;
+      }
+
+      // ワーク完了も「講義完了」と同じ lecture_views に記録する（従来は work_answers のみで DB に入らず、lecture_views 用 Webhook が飛ばなかった）
+      const { error: viewErr } = await upsertLectureViewRecord(lectureId);
+      if (viewErr) {
+        console.error('lecture_views (after work)', viewErr);
+        alert('ワークは保存できましたが、講義完了記録（lecture_views）の保存に失敗しました。もう一度「提出」を試してください。\n' + (viewErr.message || ''));
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = workAnswers[lectureId] ? '回答を更新する ✨' : 'ワークを提出する ✨';
+        }
         return;
       }
 
