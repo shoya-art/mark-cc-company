@@ -43,14 +43,17 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "slot=${{ github.event.inputs.time_slot }}" >> $GITHUB_OUTPUT
           else
-            HOUR=$(date -u +%H)
-            if [ "$HOUR" = "22" ]; then
-              echo "slot=morning" >> $GITHUB_OUTPUT
-            elif [ "$HOUR" = "03" ]; then
-              echo "slot=lunch" >> $GITHUB_OUTPUT
-            else
-              echo "slot=evening" >> $GITHUB_OUTPUT
-            fi
+            # Scheduled jobs can start more than an hour late. Determine the slot
+            # from the cron expression that triggered the run, not the start time.
+            case "${{ github.event.schedule }}" in
+              '50 22 * * 0-4') echo "slot=morning" >> $GITHUB_OUTPUT ;;
+              '20 3 * * 1-5')  echo "slot=lunch" >> $GITHUB_OUTPUT ;;
+              '30 12 * * 1-5') echo "slot=evening" >> $GITHUB_OUTPUT ;;
+              *)
+                echo "::error title=Unknown schedule::${{ github.event.schedule }}"
+                exit 1
+                ;;
+            esac
           fi
 
       - name: Post to Threads

@@ -2,6 +2,8 @@
 """Threads自動投稿スクリプト - 復縁アドバイザー・ジロー"""
 
 import anthropic
+import hashlib
+import urllib.error
 import urllib.request
 import urllib.parse
 import json
@@ -12,6 +14,98 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 JST = timezone(timedelta(hours=9))
+THREADS_API_BASE = "https://graph.threads.net/v1.0"
+
+
+class ConfigurationError(RuntimeError):
+    """Required runtime configuration is missing or inconsistent."""
+
+
+class ThreadsAPIError(RuntimeError):
+    """Threads API returned an actionable error."""
+
+
+def require_env(name: str) -> str:
+    value = os.environ.get(name, "").strip()
+    if not value:
+        raise ConfigurationError(
+            f"{name} が未設定です。GitHub Actions の Repository secret を確認してください。"
+        )
+    return value
+
+
+def token_fingerprint(token: str) -> str:
+    """Return a non-reversible identifier for comparing workflow runs."""
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()[:12]
+
+
+def action_error(message: str) -> None:
+    escaped = str(message).replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+    print(f"::error title=Threads自動投稿::{escaped}")
+
+
+def threads_api_request(url: str, data: bytes = None) -> dict:
+    request = urllib.request.Request(url, data=data, method="POST" if data else "GET")
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            return json.loads(response.read())
+    except urllib.error.HTTPError as exc:
+        raw_body = exc.read().decode("utf-8", errors="replace")
+        try:
+            payload = json.loads(raw_body)
+        except json.JSONDecodeError:
+            payload = {}
+
+        api_error = payload.get("error", {})
+        code = api_error.get("code")
+        subcode = api_error.get("error_subcode")
+        message = api_error.get("message") or raw_body[:300] or "詳細なし"
+
+        if code == 190 or subcode in {463, 467}:
+            raise ThreadsAPIError(
+                "THREADS_ACCESS_TOKEN が無効または期限切れです "
+                f"(code={code}, subcode={subcode})。"
+                f"Meta response: {message}。"
+                "Meta for Developers で有効期限を確認し、Repository secret を更新してください。"
+            ) from None
+
+        raise ThreadsAPIError(
+            f"Threads API error (HTTP {exc.code}, code={code}, subcode={subcode}): {message}"
+        ) from None
+    except urllib.error.URLError as exc:
+        raise ThreadsAPIError(f"Threads API に接続できません: {exc.reason}") from None
+
+
+def validate_threads_credentials() -> tuple:
+    """Validate the exact token injected into this run before generating a post."""
+    token = require_env("THREADS_ACCESS_TOKEN")
+    configured_user_id = os.environ.get("THREADS_USER_ID", "26439768865674129").strip()
+    fingerprint = token_fingerprint(token)
+    event_name = os.environ.get("GITHUB_EVENT_NAME", "local")
+    run_id = os.environ.get("GITHUB_RUN_ID", "local")
+
+    print(
+        "Threads credential: "
+        f"fingerprint={fingerprint}, event={event_name}, run_id={run_id}"
+    )
+
+    query = urllib.parse.urlencode({
+        "fields": "id,username",
+        "access_token": token,
+    })
+    profile = threads_api_request(f"{THREADS_API_BASE}/me?{query}")
+    actual_user_id = str(profile.get("id", ""))
+
+    if not actual_user_id:
+        raise ThreadsAPIError(f"Threads ユーザー情報を取得できませんでした: {profile}")
+    if configured_user_id and configured_user_id != actual_user_id:
+        raise ConfigurationError(
+            "THREADS_USER_ID がアクセストークンのユーザーと一致しません。"
+            f"設定値={configured_user_id}, API値={actual_user_id}"
+        )
+
+    print(f"Threads authentication OK: @{profile.get('username', 'unknown')} ({actual_user_id})")
+    return actual_user_id, token
 
 
 def read_file_safe(path: str) -> str:
@@ -23,7 +117,7 @@ def read_file_safe(path: str) -> str:
 
 def generate_post(time_slot: str, repo_root: str = ".") -> tuple:
     """Claude APIで投稿文を生成。(投稿文, スコア, ヘッダー型)を返す"""
-    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    client = anthropic.Anthropic(api_key=require_env("ANTHROPIC_API_KEY"))
 
     base = f"{repo_root}/.company/marketing/content-plan/threads-learning"
     source_posts = read_file_safe(f"{base}/source-posts.md")
@@ -119,11 +213,8 @@ def generate_post(time_slot: str, repo_root: str = ".") -> tuple:
     return post_text, score, header_type
 
 
-def post_to_threads(text: str) -> str:
+def post_to_threads(text: str, user_id: str, token: str) -> str:
     """Threads APIに投稿する。投稿IDを返す。"""
-    user_id = os.environ.get("THREADS_USER_ID", "26439768865674129")
-    token = os.environ["THREADS_ACCESS_TOKEN"]
-
     # Step 1: メディアコンテナ作成
     data = urllib.parse.urlencode({
         "media_type": "TEXT",
@@ -131,15 +222,7 @@ def post_to_threads(text: str) -> str:
         "access_token": token
     }).encode()
 
-    req = urllib.request.Request(
-        f"https://graph.threads.net/v1.0/{user_id}/threads",
-        data=data, method="POST"
-    )
-    try:
-        with urllib.request.urlopen(req) as r:
-            resp = json.loads(r.read())
-    except urllib.error.HTTPError as e:
-        raise ValueError(f"コンテナ作成エラー {e.code}: {e.read().decode()}")
+    resp = threads_api_request(f"{THREADS_API_BASE}/{user_id}/threads", data)
 
     if "id" not in resp:
         raise ValueError(f"コンテナ作成失敗: {resp}")
@@ -154,15 +237,7 @@ def post_to_threads(text: str) -> str:
         "access_token": token
     }).encode()
 
-    req2 = urllib.request.Request(
-        f"https://graph.threads.net/v1.0/{user_id}/threads_publish",
-        data=data2, method="POST"
-    )
-    try:
-        with urllib.request.urlopen(req2) as r2:
-            resp2 = json.loads(r2.read())
-    except urllib.error.HTTPError as e:
-        raise ValueError(f"公開エラー {e.code}: {e.read().decode()}")
+    resp2 = threads_api_request(f"{THREADS_API_BASE}/{user_id}/threads_publish", data2)
 
     if "id" not in resp2:
         raise ValueError(f"公開失敗: {resp2}")
@@ -211,6 +286,9 @@ if __name__ == "__main__":
     print(f"実行時刻: {datetime.now(JST).strftime('%Y-%m-%d %H:%M:%S JST')}")
 
     try:
+        print("\nThreads認証を確認中...")
+        threads_user_id, threads_token = validate_threads_credentials()
+
         print("\n投稿文を生成中...")
         post_text, score, header_type = generate_post(time_slot, repo_root)
         print(f"\n【生成した投稿文】（スコア: {score:.1f}、ヘッダー型: {header_type}）")
@@ -219,13 +297,18 @@ if __name__ == "__main__":
         print("-" * 40)
 
         print("\nThreadsに投稿中...")
-        post_id = post_to_threads(post_text)
+        post_id = post_to_threads(post_text, threads_user_id, threads_token)
         print(f"POST_ID: {post_id}")
         print("✅ 投稿成功！")
 
         append_to_log(post_text, score, header_type, post_id, time_slot, repo_root)
 
+    except (ConfigurationError, ThreadsAPIError) as e:
+        action_error(str(e))
+        print(f"❌ エラー: {e}")
+        sys.exit(1)
     except Exception as e:
+        action_error(f"予期しないエラー: {type(e).__name__}: {e}")
         print(f"❌ エラー: {e}")
         import traceback
         traceback.print_exc()
