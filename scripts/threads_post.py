@@ -162,9 +162,10 @@ def read_generation_rules(repo_root: str) -> str:
 
 
 def extract_section(text: str, name: str) -> str:
-    start_marker = f"---{name}_START---"
+    start_markers = (f"---{name}_START---", f"---{name}---")
     end_marker = f"---{name}_END---"
-    if start_marker not in text or end_marker not in text:
+    start_marker = next((marker for marker in start_markers if marker in text), "")
+    if not start_marker or end_marker not in text:
         return ""
     start = text.index(start_marker) + len(start_marker)
     end = text.index(end_marker, start)

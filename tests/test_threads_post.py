@@ -56,6 +56,27 @@ class ThreadsPostTests(unittest.TestCase):
         threads_post.validate_chain_texts(texts)
         self.assertEqual(texts, ["親投稿", "返信1", "返信2", "最終返信"])
 
+    def test_extracts_metadata_markers_without_start_suffix(self):
+        response = """
+---QUALITY_STATUS---
+PASS
+---QUALITY_STATUS_END---
+---SCORE---
+9.1
+---SCORE_END---
+---HEADER_TYPE---
+B1
+---HEADER_TYPE_END---
+"""
+
+        status = threads_post.extract_section(response, "QUALITY_STATUS")
+        score, header_type = threads_post.parse_score_and_header(response)
+
+        self.assertEqual(status, "PASS")
+        self.assertEqual(score, 9.1)
+        self.assertEqual(header_type, "B1")
+        threads_post.validate_quality_gate(status, score)
+
     def test_rejects_text_over_threads_limit(self):
         texts = ["親投稿", "返信1", "返信2", "あ" * 501]
 
