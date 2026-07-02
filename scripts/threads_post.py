@@ -18,6 +18,9 @@ THREADS_API_BASE = "https://graph.threads.net/v1.0"
 THREADS_TEXT_LIMIT = 500
 CHAIN_STATE_FILENAME = "threads-pending-chain.json"
 CHAIN_PART_NAMES = ("親投稿", "追いコメント①", "追いコメント②", "最終コメント")
+CHAIN_TEXT_LIMITS = (110, 240, 240, 260)
+CHAIN_LINE_LIMIT = 22
+CHAIN_BLOCK_LINE_LIMIT = 3
 
 
 class ConfigurationError(RuntimeError):
@@ -176,19 +179,49 @@ def validate_chain_texts(texts: list) -> None:
     if len(texts) != len(CHAIN_PART_NAMES):
         raise ValueError(f"投稿チェーンは4件必要です。取得件数={len(texts)}")
 
-    for part_name, text in zip(CHAIN_PART_NAMES, texts):
+    for part_name, text, text_limit in zip(
+        CHAIN_PART_NAMES, texts, CHAIN_TEXT_LIMITS
+    ):
         if not text.strip():
             raise ValueError(f"{part_name}が空です。")
-        if len(text) > THREADS_TEXT_LIMIT:
+        if len(text) > text_limit:
             raise ValueError(
-                f"{part_name}がThreadsの上限を超えています。"
-                f"{len(text)} / {THREADS_TEXT_LIMIT}文字"
+                f"{part_name}が読みやすさの上限を超えています。"
+                f"{len(text)} / {text_limit}文字"
             )
+
+
+def validate_mobile_layout(texts: list) -> None:
+    """スマホ表示で自動折り返しや長い段落が生じにくい改行を検査する。"""
+    for part_name, text in zip(CHAIN_PART_NAMES, texts):
+        block_lines = 0
+        previous_blank = False
+        for line_number, line in enumerate(text.splitlines(), start=1):
+            if not line.strip():
+                if previous_blank:
+                    raise ValueError(f"{part_name}に空行が2行以上続いています。")
+                previous_blank = True
+                block_lines = 0
+                continue
+
+            previous_blank = False
+            block_lines += 1
+            if len(line) > CHAIN_LINE_LIMIT:
+                raise ValueError(
+                    f"{part_name}の{line_number}行目が長すぎます。"
+                    f"{len(line)} / {CHAIN_LINE_LIMIT}文字"
+                )
+            if block_lines > CHAIN_BLOCK_LINE_LIMIT:
+                raise ValueError(
+                    f"{part_name}に{CHAIN_BLOCK_LINE_LIMIT + 1}行以上続く"
+                    "ブロックがあります。"
+                )
 
 
 def validate_chain_structure(texts: list) -> None:
     """自動判定できる最低限の区切り構造を検査する。"""
     validate_chain_texts(texts)
+    validate_mobile_layout(texts)
     for index in range(3):
         if not texts[index].rstrip().endswith("↓"):
             raise ValueError(f"{CHAIN_PART_NAMES[index]}が未完の「↓」で終わっていません。")
@@ -362,10 +395,11 @@ def generate_chain_post(time_slot: str, repo_root: str = ".") -> tuple:
 3. 追いコメント①は希望を明言し、男性心理を分かりやすく説明する
 4. 追いコメント②はNG行動を即回収し、彼の受け取り方と変化までつなぐ
 5. 最終コメントは②を回収し、彼に見える変化と前向きな期待を描いて完結させる
-6. 各1件を{THREADS_TEXT_LIMIT}文字以内にする
-7. 復縁を保証しない。彼の心情を事実のように断定しない
-8. ジローは読者を否定せず、希望を残して一緒に進む立場で話す
-9. 誰かの投稿のフレーズを複製しない
+6. 親110文字、①240文字、②240文字、最終260文字以内にする
+7. 1行22文字以内、1ブロック3行以内にし、意味の切れ目に空行を1行入れる
+8. 復縁を保証しない。彼の心情を事実のように断定しない
+9. ジローは読者を否定せず、希望を残して一緒に進む立場で話す
+10. 誰かの投稿のフレーズを複製しない
 
 ---
 

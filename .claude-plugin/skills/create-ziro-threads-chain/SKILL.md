@@ -31,6 +31,7 @@ description: 復縁アドバイザー・ジローのThreads投稿を、親投稿
 
 - 共通設計の項目と選び方: [references/chain-blueprint.md](references/chain-blueprint.md)
 - 3つの接続契約: [references/transition-contracts.md](references/transition-contracts.md)
+- スマホで読みやすい改行: [references/mobile-readability.md](references/mobile-readability.md)
 - 完成時の出力形式: [references/output-format.md](references/output-format.md)
 
 ## Sequential Pipeline
@@ -60,8 +61,9 @@ description: 復縁アドバイザー・ジローのThreads投稿を、親投稿
 2. 具体的状況、悲観への共感、未完の反転だけを書く。
 3. ①で渡す希望や理由を親投稿から削る。
 4. 親投稿の末尾と①の予定冒頭を [references/transition-contracts.md](references/transition-contracts.md) で仮確認する。
+5. [references/mobile-readability.md](references/mobile-readability.md) の改行基準へ整える。
 
-**Exit:** 40〜120文字を目安とし、答えを出さず、①を読まないと意味が完結しない親投稿がある。
+**Exit:** 40〜90文字を目安とし、答えを出さず、①を読まないと意味が完結しない親投稿がある。
 
 ### Phase 3: 追いコメント①を作る
 
@@ -74,6 +76,7 @@ description: 復縁アドバイザー・ジローのThreads投稿を、親投稿
 3. 現在の拒絶と二人の未来を分ける。
 4. ②で扱うNG行動の直前で切る。
 5. 親→①の接続を検査し、意味がずれる場合は①の冒頭だけを直す。
+6. 240文字以内、1行22文字以内へ整える。
 
 **Exit:** 親投稿の問いを即回収し、読者へ希望を渡し、②の一文目で答えられる未完部分がある。
 
@@ -88,6 +91,7 @@ description: 復縁アドバイザー・ジローのThreads投稿を、親投稿
 3. 行動、彼の受け取り方、離れたくなる理由、逆の行動、彼の変化、希望の順に書く。
 4. 最終コメントで扱う女性像や変化の直前で切る。
 5. ①→②の接続を検査し、意味がずれる場合は②の冒頭だけを直す。
+6. 240文字以内、1行22文字以内へ整える。
 
 **Exit:** ①の問いへ答え、行動から彼の変化まで一直線につながり、最終の一文目で答えられる未完部分がある。
 
@@ -103,6 +107,7 @@ description: 復縁アドバイザー・ジローのThreads投稿を、親投稿
 4. 彼が抱く前向きな期待を心の声で示す。
 5. CTAを使う場合は、本文から自然につなぎ、一つの行動だけを求め、CTAで終了する。
 6. ②→最終の接続を検査する。
+7. 260文字以内、1行22文字以内へ整える。
 
 **Exit:** 新しい論点を増やさず、希望とジローの温かさを残して完結する最終コメントがある。
 
@@ -113,7 +118,7 @@ description: 復縁アドバイザー・ジローのThreads投稿を、親投稿
 **Actions:**
 
 1. [../check-threads-reply-chain/SKILL.md](../check-threads-reply-chain/SKILL.md) と同スキルの references/ を読む。
-2. 4パーツ、3接続、ジローのスタンス、CTA、各500文字以内を検査する。
+2. 4パーツ、3接続、ジローのスタンス、CTA、スマホ改行を検査する。
 3. PASSならPhase 7へ進む。
 4. REVISEまたはBLOCKなら、指摘されたパーツまたは接続だけを修正する。
 5. 同じ品質検査を再実行する。修正ループは最大2回にする。
@@ -162,5 +167,5 @@ description: 復縁アドバイザー・ジローのThreads投稿を、親投稿
 - 読者を否定せず、復縁の希望を残している
 - 彼の心理が分かりやすく、断定しすぎていない
 - CTAが本文と履歴に合い、一つだけである
-- 各パーツが500文字以内である
+- 各パーツが個別の文字数上限と1行22文字以内を守っている
 - 品質ゲートがPASSである

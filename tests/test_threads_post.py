@@ -83,6 +83,28 @@ B1
         with self.assertRaisesRegex(ValueError, "上限を超えています"):
             threads_post.validate_chain_texts(texts)
 
+    def test_rejects_line_over_mobile_limit(self):
+        texts = [
+            "でも、実は…↓",
+            "あ" * 23 + "↓",
+            "必要になるのが…↓",
+            "最後まで完結します。",
+        ]
+
+        with self.assertRaisesRegex(ValueError, "行目が長すぎます"):
+            threads_post.validate_chain_structure(texts)
+
+    def test_rejects_block_over_three_lines(self):
+        texts = [
+            "一行目\n二行目\n三行目\nでも、実は…↓",
+            "復縁を遠ざける行動が…↓",
+            "必要になるのが…↓",
+            "最後まで完結します。",
+        ]
+
+        with self.assertRaisesRegex(ValueError, "4行以上"):
+            threads_post.validate_chain_structure(texts)
+
     def test_rejects_chain_without_unfinished_cut(self):
         texts = [
             "でも、実は…↓",
