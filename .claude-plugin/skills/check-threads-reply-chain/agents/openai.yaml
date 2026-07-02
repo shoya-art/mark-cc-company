@@ -1,0 +1,4 @@
+interface:
+  display_name: "Threads投稿チェーン品質チェック"
+  short_description: "親投稿から最終コメントまでのルール準拠と接続品質を厳密に検査"
+  default_prompt: "Use $check-threads-reply-chain to audit this Threads reply chain and report every rule violation."

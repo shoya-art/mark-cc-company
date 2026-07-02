@@ -1,0 +1,4 @@
+interface:
+  display_name: "Threads親投稿・区切り設計"
+  short_description: "ジロー向けに追いコメントを開かせる短い親投稿を設計する"
+  default_prompt: "Use $write-threads-parent-post to write a short Japanese Threads parent post for Jiro that ends before the reveal."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Threads最終コメント設計"
+  short_description: "ジローらしい温かさと自然なCTAで最終コメントを作成"
+  default_prompt: "Use $write-threads-final-reply to write the final Threads reply for Jiro."

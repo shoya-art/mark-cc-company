@@ -1,0 +1,4 @@
+interface:
+  display_name: "ジローThreads完全版"
+  short_description: "親投稿から最終コメントまで一貫した投稿チェーンを作成する"
+  default_prompt: "Use $create-ziro-threads-chain to create and quality-check a complete four-part Threads chain for Jiro."

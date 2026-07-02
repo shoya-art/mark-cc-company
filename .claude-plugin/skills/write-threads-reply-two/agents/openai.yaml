@@ -1,0 +1,4 @@
+interface:
+  display_name: "追いコメント②・行動変換"
+  short_description: "ジロー向け追いコメント②で行動と彼の反応を簡潔に伝える"
+  default_prompt: "Use $write-threads-reply-two to write the second Threads follow-up reply for Jiro."

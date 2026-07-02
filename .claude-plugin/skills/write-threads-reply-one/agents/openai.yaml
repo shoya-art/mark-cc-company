@@ -1,0 +1,4 @@
+interface:
+  display_name: "追いコメント①・希望反転"
+  short_description: "ジロー向け追いコメント①で希望と男性心理を明確に伝える"
+  default_prompt: "Use $write-threads-reply-one to write the first Threads follow-up reply for Jiro."
