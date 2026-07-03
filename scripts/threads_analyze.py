@@ -224,7 +224,11 @@ def save_knowledge(client: SupabaseClient, finding: dict) -> None:
         client.insert("threads_knowledge", values)
 
 
-def language_review(root_records: list[dict], seed_mode: bool = False) -> dict:
+def language_review(
+    root_records: list[dict],
+    seed_mode: bool = False,
+    evidence_label: str | None = None,
+) -> dict:
     if len(root_records) < MIN_SAMPLE_SIZE or not os.environ.get("ANTHROPIC_API_KEY"):
         return {
             "facts": [],
@@ -250,8 +254,8 @@ def language_review(root_records: list[dict], seed_mode: bool = False) -> dict:
         "cta_type": row.get("cta_type"),
     } for index, row in enumerate(selected)]
 
-    evidence_label = (
-        "既存投稿の成熟後累積値。初期仮説として使い、72時間比較で再検証する"
+    evidence_label = evidence_label or (
+        "既存投稿の累積値。初期仮説として使い、72時間比較で再検証する"
         if seed_mode else "72時間後の比較可能な数値"
     )
     prompt = f"""あなたはThreads投稿の分析担当です。
@@ -310,6 +314,7 @@ def save_language_knowledge(
     candidates: list[dict],
     *,
     seed_mode: bool,
+    evidence_source: str = "72h_language_comparison",
 ) -> int:
     allowed_categories = {
         "topic", "hook", "cut", "psychology", "tone",
@@ -336,7 +341,7 @@ def save_language_knowledge(
             "status": "candidate",
             "last_validated_at": datetime.now(timezone.utc).isoformat(),
             "applicable_conditions": {
-                "source": "historical_seed" if seed_mode else "72h_language_comparison",
+                "source": evidence_source,
                 "requires_revalidation": True,
             },
         }
@@ -366,19 +371,43 @@ def analyze() -> int:
         row for row in standard_records if row["post_kind"] in {"single", "parent"}
     ]
     seed_mode = len(standard_roots) < MIN_SAMPLE_SIZE
-    if seed_mode:
-        cutoff = now - timedelta(days=7)
-        seed_records = [
-            row for row in load_records(client, "latest")
-            if datetime.fromisoformat(row["published_at"].replace("Z", "+00:00")) <= cutoff
-        ]
-        analysis_records = seed_records
-        root_records = [
-            row for row in seed_records if row["post_kind"] in {"single", "parent"}
-        ]
-    else:
+    if not seed_mode:
         analysis_records = standard_records
         root_records = standard_roots
+        evidence_type = "standardized_72h"
+        evidence_source = "72h_language_comparison"
+        evidence_label = "72時間後の比較可能な数値"
+    else:
+        provisional_records = load_records(client, "24h")
+        provisional_roots = [
+            row for row in provisional_records
+            if row["post_kind"] in {"single", "parent"}
+        ]
+        if len(provisional_roots) >= MIN_SAMPLE_SIZE:
+            analysis_records = provisional_records
+            root_records = provisional_roots
+            evidence_type = "provisional_24h"
+            evidence_source = "24h_provisional_seed"
+            evidence_label = "24時間後の比較可能な暫定値。72時間比較で再検証する"
+        else:
+            cutoff = now - timedelta(hours=24)
+            seed_records = [
+                row for row in load_records(client, "latest")
+                if datetime.fromisoformat(
+                    row["published_at"].replace("Z", "+00:00")
+                ) <= cutoff
+            ]
+            analysis_records = seed_records
+            root_records = [
+                row for row in seed_records
+                if row["post_kind"] in {"single", "parent"}
+            ]
+            evidence_type = "provisional_lifetime_24h_plus"
+            evidence_source = "historical_seed"
+            evidence_label = (
+                "24時間以上経過した既存投稿の累積値。"
+                "初期仮説として使い、72時間比較で再検証する"
+            )
 
     if not root_records:
         print("比較可能な投稿データがまだないため、分析をスキップします。")
@@ -388,17 +417,22 @@ def analyze() -> int:
     for finding in findings:
         save_knowledge(client, finding)
 
-    review = language_review(root_records, seed_mode=seed_mode)
+    review = language_review(
+        root_records,
+        seed_mode=seed_mode,
+        evidence_label=evidence_label,
+    )
     language_knowledge_count = save_language_knowledge(
         client,
         review.get("knowledge_candidates", []),
         seed_mode=seed_mode,
+        evidence_source=evidence_source,
     )
     facts = [{
         "metric": "median_views_historical" if seed_mode else "median_views_72h",
         "value": round(median([row["views"] for row in root_records]), 2),
         "sample_size": len(root_records),
-        "evidence_type": "provisional_seed" if seed_mode else "standardized_72h",
+        "evidence_type": evidence_type,
     }, *performance_contrast_facts(root_records), *chain_facts(analysis_records),
         *review.get("facts", [])]
 

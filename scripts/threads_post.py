@@ -203,12 +203,14 @@ def read_active_knowledge(limit: int = 30) -> str:
         action_warning(f"ナレッジをDBから取得できませんでした: {exc}")
         return "（ナレッジ取得失敗）"
 
+    provisional_sources = {"historical_seed", "24h_provisional_seed"}
     applicable = [
         row for row in rows
         if row.get("status") == "active"
         or (int(row.get("sample_size") or 0) >= 5 and float(row.get("confidence") or 0) >= 0.65)
         or (
-            (row.get("applicable_conditions") or {}).get("source") == "historical_seed"
+            (row.get("applicable_conditions") or {}).get("source")
+            in provisional_sources
             and int(row.get("sample_size") or 0) >= 2
             and float(row.get("confidence") or 0) >= 0.50
         )
@@ -216,7 +218,7 @@ def read_active_knowledge(limit: int = 30) -> str:
     if not applicable:
         return "（適用可能なナレッジなし）"
     return "\n".join(
-        f"- [{'暫定' if (row.get('applicable_conditions') or {}).get('source') == 'historical_seed' else '検証済み'}]"
+        f"- [{'暫定' if (row.get('applicable_conditions') or {}).get('source') in provisional_sources else '検証済み'}]"
         f"[{row['category']}] {row['rule_text']} "
         f"(n={row['sample_size']}, confidence={float(row['confidence']):.2f})"
         for row in applicable
