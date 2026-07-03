@@ -5,6 +5,12 @@ from pathlib import Path
 WORKFLOW_PATH = (
     Path(__file__).parents[1] / ".github" / "workflows" / "threads-auto-post.yml"
 )
+INSIGHTS_WORKFLOW_PATH = (
+    Path(__file__).parents[1] / ".github" / "workflows" / "threads-insights.yml"
+)
+LEARNING_WORKFLOW_PATH = (
+    Path(__file__).parents[1] / ".github" / "workflows" / "threads-learning.yml"
+)
 
 
 class ThreadsWorkflowTests(unittest.TestCase):
@@ -34,6 +40,23 @@ class ThreadsWorkflowTests(unittest.TestCase):
             "${{ steps.posting.outputs.slot }} .",
             self.workflow,
         )
+
+    def test_passes_supabase_secrets(self):
+        self.assertIn("THREADS_SUPABASE_URL", self.workflow)
+        self.assertIn("THREADS_SUPABASE_SECRET_KEY", self.workflow)
+
+    def test_no_longer_commits_runtime_logs_to_main(self):
+        self.assertNotIn("git push", self.workflow)
+
+    def test_insights_and_learning_workflows_exist(self):
+        insights = INSIGHTS_WORKFLOW_PATH.read_text(encoding="utf-8")
+        learning = LEARNING_WORKFLOW_PATH.read_text(encoding="utf-8")
+        self.assertIn("python scripts/threads_backfill.py --limit 25", insights)
+        self.assertIn("python scripts/threads_metrics.py", insights)
+        self.assertIn("python scripts/threads_analyze.py", learning)
+        self.assertIn("python scripts/threads_notify_line.py", learning)
+        self.assertIn("THREADS_LINE_NOTIFY_URL", learning)
+        self.assertIn("THREADS_LINE_NOTIFY_SECRET", learning)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Threads自動投稿スクリプト - 復縁アドバイザー・ジロー"""
 
+from __future__ import annotations
+
 import anthropic
 import hashlib
 import urllib.error
@@ -10,8 +12,14 @@ import json
 import sys
 import os
 import time
+import uuid
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+
+try:
+    from threads_data import SupabaseClient, SupabaseError
+except ModuleNotFoundError:  # Loaded as scripts.threads_post by the test suite.
+    from scripts.threads_data import SupabaseClient, SupabaseError
 
 JST = timezone(timedelta(hours=9))
 THREADS_API_BASE = "https://graph.threads.net/v1.0"
@@ -48,6 +56,11 @@ def token_fingerprint(token: str) -> str:
 def action_error(message: str) -> None:
     escaped = str(message).replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
     print(f"::error title=Threads自動投稿::{escaped}")
+
+
+def action_warning(message: str) -> None:
+    escaped = str(message).replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+    print(f"::warning title=Threads DB::{escaped}")
 
 
 def threads_api_request(url: str, data: bytes = None) -> dict:
@@ -114,6 +127,17 @@ def validate_threads_credentials() -> tuple:
     return actual_user_id, token
 
 
+def validate_supabase_configuration() -> None:
+    """Stop before publishing when the production analytics DB is unavailable."""
+    required = os.environ.get("GITHUB_ACTIONS", "").lower() == "true"
+    client = SupabaseClient.from_env(required=required)
+    if client is None:
+        print("Supabase: local optional mode (not configured)")
+        return
+    client.select("threads_posts", columns="id", limit=1)
+    print("Supabase connection OK")
+
+
 def read_file_safe(path: str) -> str:
     try:
         return Path(path).read_text(encoding="utf-8")
@@ -131,6 +155,95 @@ def read_recent_chain_log(repo_root: str, limit: int = 14) -> str:
     entries = log_text.split("\n## ")
     recent = entries[-limit:]
     return "\n## ".join(recent)
+
+
+def read_recent_posts_from_db(limit: int = 14) -> str:
+    """Read recent posts from Supabase, falling back to the repository log."""
+    client = SupabaseClient.from_env(required=False)
+    if client is None:
+        return ""
+    try:
+        rows = client.select(
+            "threads_posts",
+            columns="published_at,post_kind,body,cta_type,topic",
+            order="published_at.desc",
+            limit=limit * 4,
+        )
+    except SupabaseError as exc:
+        action_warning(f"直近投稿をDBから取得できませんでした: {exc}")
+        return ""
+
+    if not rows:
+        return ""
+    return "\n\n".join(
+        f"## {row.get('published_at', '')} [{row.get('post_kind', '')}]\n"
+        f"topic={row.get('topic') or '未設定'} / cta={row.get('cta_type') or '未設定'}\n"
+        f"{row.get('body', '')}"
+        for row in rows
+    )
+
+
+def read_active_knowledge(limit: int = 30) -> str:
+    """Read evidence-backed rules that future generation should apply."""
+    client = SupabaseClient.from_env(required=False)
+    if client is None:
+        return "（蓄積ナレッジなし）"
+    try:
+        rows = client.select(
+            "threads_knowledge",
+            columns=(
+                "category,rule_text,evidence_summary,sample_size,confidence,status,"
+                "applicable_conditions"
+            ),
+            filters={"status": "in.(active,candidate)"},
+            order="confidence.desc,sample_size.desc",
+            limit=limit,
+        )
+    except SupabaseError as exc:
+        action_warning(f"ナレッジをDBから取得できませんでした: {exc}")
+        return "（ナレッジ取得失敗）"
+
+    applicable = [
+        row for row in rows
+        if row.get("status") == "active"
+        or (int(row.get("sample_size") or 0) >= 5 and float(row.get("confidence") or 0) >= 0.65)
+        or (
+            (row.get("applicable_conditions") or {}).get("source") == "historical_seed"
+            and int(row.get("sample_size") or 0) >= 2
+            and float(row.get("confidence") or 0) >= 0.50
+        )
+    ]
+    if not applicable:
+        return "（適用可能なナレッジなし）"
+    return "\n".join(
+        f"- [{'暫定' if (row.get('applicable_conditions') or {}).get('source') == 'historical_seed' else '検証済み'}]"
+        f"[{row['category']}] {row['rule_text']} "
+        f"(n={row['sample_size']}, confidence={float(row['confidence']):.2f})"
+        for row in applicable
+    )
+
+
+def parse_generation_metadata(text: str) -> dict:
+    fields = {
+        "topic": "TOPIC",
+        "audience_situation": "AUDIENCE_SITUATION",
+        "hook_type": "HOOK_TYPE",
+        "cut_type": "CUT_TYPE",
+        "psychology_type": "PSYCHOLOGY_TYPE",
+        "cta_type": "CTA_TYPE",
+        "hypothesis": "HYPOTHESIS",
+        "variable_changed": "VARIABLE_CHANGED",
+        "expected_outcome": "EXPECTED_OUTCOME",
+    }
+    return {key: extract_section(text, marker) or None for key, marker in fields.items()}
+
+
+def choose_strategy_mode(time_slot: str, now: datetime | None = None) -> str:
+    """Use proven patterns about 70% of the time and reserve 30% for exploration."""
+    current = now or datetime.now(JST)
+    slot_index = {"morning": 0, "lunch": 1, "evening": 2}.get(time_slot, 0)
+    bucket = (current.timetuple().tm_yday * 3 + slot_index) % 10
+    return "exploit" if bucket < 7 else "explore"
 
 
 def read_generation_rules(repo_root: str) -> str:
@@ -261,6 +374,8 @@ def generate_legacy_post(time_slot: str, repo_root: str = ".") -> tuple:
     client = anthropic.Anthropic(api_key=require_env("ANTHROPIC_API_KEY"))
     base = f"{repo_root}/.company/marketing/content-plan/threads-learning"
     source_posts = read_file_safe(f"{base}/source-posts.md")
+    active_knowledge = read_active_knowledge()
+    strategy_mode = choose_strategy_mode(time_slot)
 
     slot_config = {
         "morning": {
@@ -305,6 +420,14 @@ def generate_legacy_post(time_slot: str, repo_root: str = ".") -> tuple:
 4. コメント誘導する場合: 「〜教えてください」「コメントで教えて」をラフに入れる
 5. NG: 「頑張れば」「まずは自分磨き」「〜なのです」「業者っぽい表現」
 
+【過去データから得たナレッジ】
+{active_knowledge}
+
+【今回の戦略】
+{strategy_mode}
+- exploit: 既存の勝ち筋を優先し、フレーズは複製せず構造だけ使う
+- explore: 勝ち筋を土台にして、検証要素を1つだけ変える
+
 ---
 
 以下の形式だけで返してください（説明・前置き不要）:
@@ -316,7 +439,28 @@ def generate_legacy_post(time_slot: str, repo_root: str = ".") -> tuple:
 ---SCORE_END---
 ---HEADER_TYPE---
 （参照した元ネタのID、例: B1）
----HEADER_TYPE_END---"""
+---HEADER_TYPE_END---
+---TOPIC---
+（投稿テーマを短く）
+---TOPIC_END---
+---AUDIENCE_SITUATION---
+（想定読者の具体的な状況）
+---AUDIENCE_SITUATION_END---
+---HOOK_TYPE---
+（冒頭の型）
+---HOOK_TYPE_END---
+---CTA_TYPE---
+（CTA種別。なしの場合はnone）
+---CTA_TYPE_END---
+---HYPOTHESIS---
+（今回の投稿が伸びると考える理由）
+---HYPOTHESIS_END---
+---VARIABLE_CHANGED---
+（今回検証する要素を1つだけ）
+---VARIABLE_CHANGED_END---
+---EXPECTED_OUTCOME---
+（どの数値がどう変化すると予想するか）
+---EXPECTED_OUTCOME_END---"""
 
     response = client.messages.create(
         model="claude-sonnet-4-6",
@@ -334,7 +478,9 @@ def generate_legacy_post(time_slot: str, repo_root: str = ".") -> tuple:
             f"従来投稿がThreadsの上限を超えています。"
             f"{len(post_text)} / {THREADS_TEXT_LIMIT}文字"
         )
-    return post_text, score, header_type
+    metadata = parse_generation_metadata(text)
+    metadata["strategy_mode"] = strategy_mode
+    return post_text, score, header_type, metadata
 
 
 def generate_chain_post(time_slot: str, repo_root: str = ".") -> tuple:
@@ -344,7 +490,9 @@ def generate_chain_post(time_slot: str, repo_root: str = ".") -> tuple:
     base = f"{repo_root}/.company/marketing/content-plan/threads-learning"
     source_posts = read_file_safe(f"{base}/source-posts.md")
     generation_rules = read_generation_rules(repo_root)
-    recent_log = read_recent_chain_log(repo_root)
+    recent_log = read_recent_posts_from_db() or read_recent_chain_log(repo_root)
+    active_knowledge = read_active_knowledge()
+    strategy_mode = choose_strategy_mode(time_slot)
 
     slot_config = {
         "morning": {
@@ -388,6 +536,18 @@ def generate_chain_post(time_slot: str, repo_root: str = ".") -> tuple:
 
 ---
 
+【過去データから得たナレッジ】
+根拠があるものだけを参考にし、ジローの基本姿勢と品質ルールを優先してください。
+
+{active_knowledge}
+
+【今回の戦略】
+{strategy_mode}
+- exploit: 既存の勝ち筋を優先し、フレーズは複製せず構造だけ使う
+- explore: 勝ち筋を土台にして、検証要素を1つだけ変える
+
+---
+
 【全体の必須条件】
 
 1. 4件が同じ悩みを扱い、直前の「…↓」を次の一文目で必ず回収する
@@ -424,7 +584,34 @@ def generate_chain_post(time_slot: str, repo_root: str = ".") -> tuple:
 ---SCORE_END---
 ---HEADER_TYPE---
 （参照した元ネタのID、例: B1）
----HEADER_TYPE_END---"""
+---HEADER_TYPE_END---
+---TOPIC---
+（投稿テーマを短く）
+---TOPIC_END---
+---AUDIENCE_SITUATION---
+（想定読者の具体的な状況）
+---AUDIENCE_SITUATION_END---
+---HOOK_TYPE---
+（親投稿の冒頭の型）
+---HOOK_TYPE_END---
+---CUT_TYPE---
+（親投稿から追いコメントへ区切る型）
+---CUT_TYPE_END---
+---PSYCHOLOGY_TYPE---
+（解説した彼の心理）
+---PSYCHOLOGY_TYPE_END---
+---CTA_TYPE---
+（最終CTAの種別。誘導なしはnone）
+---CTA_TYPE_END---
+---HYPOTHESIS---
+（今回のチェーンが伸びると考える理由）
+---HYPOTHESIS_END---
+---VARIABLE_CHANGED---
+（今回検証する要素を1つだけ）
+---VARIABLE_CHANGED_END---
+---EXPECTED_OUTCOME---
+（どの数値がどう変化すると予想するか）
+---EXPECTED_OUTCOME_END---"""
 
     response = client.messages.create(
         model="claude-sonnet-4-6",
@@ -450,7 +637,9 @@ def generate_chain_post(time_slot: str, repo_root: str = ".") -> tuple:
 
     validate_quality_gate(extract_section(text, "QUALITY_STATUS"), score)
 
-    return chain_texts, score, header_type
+    metadata = parse_generation_metadata(text)
+    metadata["strategy_mode"] = strategy_mode
+    return chain_texts, score, header_type, metadata
 
 
 def post_to_threads(text: str, user_id: str, token: str, reply_to_id: str = None) -> str:
@@ -488,6 +677,153 @@ def post_to_threads(text: str, user_id: str, token: str, reply_to_id: str = None
     return resp2["id"]
 
 
+def get_thread_details(post_id: str, token: str) -> dict:
+    query = urllib.parse.urlencode({
+        "fields": "id,text,timestamp,permalink,username,media_type",
+        "access_token": token,
+    })
+    return threads_api_request(f"{THREADS_API_BASE}/{post_id}?{query}")
+
+
+def _post_db_payload(
+    *,
+    post_id: str,
+    body: str,
+    post_kind: str,
+    posting_mode: str,
+    time_slot: str,
+    quality_score: float,
+    header_type: str,
+    metadata: dict,
+    details: dict,
+    chain_id: str | None = None,
+    parent_post_id: str | None = None,
+) -> dict:
+    return {
+        "threads_post_id": str(post_id),
+        "chain_id": chain_id,
+        "parent_post_id": parent_post_id,
+        "post_kind": post_kind,
+        "body": body,
+        "published_at": details.get("timestamp") or datetime.now(timezone.utc).isoformat(),
+        "permalink": details.get("permalink"),
+        "username": details.get("username"),
+        "media_type": details.get("media_type") or "TEXT",
+        "posting_mode": posting_mode,
+        "time_slot": time_slot,
+        "topic": metadata.get("topic"),
+        "audience_situation": metadata.get("audience_situation"),
+        "hook_type": metadata.get("hook_type"),
+        "cut_type": metadata.get("cut_type"),
+        "psychology_type": metadata.get("psychology_type"),
+        "cta_type": metadata.get("cta_type"),
+        "hypothesis": metadata.get("hypothesis"),
+        "variable_changed": metadata.get("variable_changed"),
+        "expected_outcome": metadata.get("expected_outcome"),
+        "quality_score": quality_score,
+        "skill_version": "ziro-threads-chain-v1" if posting_mode == "chain" else "legacy-v1",
+        "generation_metadata": {**metadata, "source_post_id": header_type},
+    }
+
+
+def _save_hypothesis(client: SupabaseClient, db_post_id: str, metadata: dict) -> None:
+    hypothesis = metadata.get("hypothesis")
+    if not hypothesis:
+        return
+    existing = client.select(
+        "threads_hypotheses",
+        columns="id",
+        filters={"post_id": f"eq.{db_post_id}"},
+        limit=1,
+    )
+    if existing:
+        return
+    client.insert("threads_hypotheses", {
+        "post_id": db_post_id,
+        "hypothesis_text": hypothesis,
+        "variable_changed": metadata.get("variable_changed") or "baseline",
+        "target_metric": "views",
+        "predicted_direction": "up",
+        "expected_outcome": metadata.get("expected_outcome"),
+    })
+
+
+def save_legacy_post_to_db(
+    post_text: str,
+    score: float,
+    header_type: str,
+    post_id: str,
+    time_slot: str,
+    token: str,
+    metadata: dict,
+) -> None:
+    client = SupabaseClient.from_env(required=False)
+    if client is None:
+        action_warning("Supabase Secretsが未設定のため、投稿データを保存しませんでした。")
+        return
+    try:
+        try:
+            details = get_thread_details(post_id, token)
+        except ThreadsAPIError as exc:
+            action_warning(f"投稿詳細の取得に失敗したため既知情報で保存します: {exc}")
+            details = {}
+        payload = _post_db_payload(
+            post_id=post_id,
+            body=post_text,
+            post_kind="single",
+            posting_mode="legacy",
+            time_slot=time_slot,
+            quality_score=score,
+            header_type=header_type,
+            metadata=metadata,
+            details=details,
+        )
+        saved = client.upsert("threads_posts", payload, on_conflict="threads_post_id")
+        if saved:
+            _save_hypothesis(client, saved[0]["id"], metadata)
+        print(f"Supabase保存完了: {post_id}")
+    except (SupabaseError, ThreadsAPIError) as exc:
+        action_warning(f"投稿済みですがSupabase保存に失敗しました: {exc}")
+
+
+def save_chain_to_db(state: dict, post_ids: list, token: str) -> None:
+    client = SupabaseClient.from_env(required=False)
+    if client is None:
+        action_warning("Supabase Secretsが未設定のため、チェーンを保存しませんでした。")
+        return
+
+    chain_id = state.setdefault("chain_id", str(uuid.uuid4()))
+    metadata = state.get("metadata", {})
+    root_db_id = None
+    try:
+        for index, (post_id, body) in enumerate(zip(post_ids, state["texts"])):
+            try:
+                details = get_thread_details(post_id, token)
+            except ThreadsAPIError as exc:
+                action_warning(f"投稿詳細の取得に失敗したため既知情報で保存します: {exc}")
+                details = {}
+            payload = _post_db_payload(
+                post_id=post_id,
+                body=body,
+                post_kind=("parent", "reply_1", "reply_2", "final_reply")[index],
+                posting_mode="chain",
+                time_slot=state.get("time_slot", "morning"),
+                quality_score=float(state.get("score", 0)),
+                header_type=state.get("header_type", "不明"),
+                metadata=metadata,
+                details=details,
+                chain_id=chain_id,
+                parent_post_id=root_db_id,
+            )
+            saved = client.upsert("threads_posts", payload, on_conflict="threads_post_id")
+            if index == 0 and saved:
+                root_db_id = saved[0]["id"]
+                _save_hypothesis(client, root_db_id, metadata)
+        print(f"Supabase保存完了: chain_id={chain_id}")
+    except SupabaseError as exc:
+        action_warning(f"チェーンは投稿済みですがSupabase保存に失敗しました: {exc}")
+
+
 def chain_state_path(repo_root: str) -> Path:
     return Path(repo_root) / ".company" / "marketing" / "content-plan" / CHAIN_STATE_FILENAME
 
@@ -523,7 +859,13 @@ def load_chain_state(repo_root: str = ".") -> dict:
     return state
 
 
-def create_chain_state(texts: list, score: float, header_type: str, time_slot: str) -> dict:
+def create_chain_state(
+    texts: list,
+    score: float,
+    header_type: str,
+    time_slot: str,
+    metadata: dict | None = None,
+) -> dict:
     return {
         "schema_version": 1,
         "mode": "chain",
@@ -532,6 +874,8 @@ def create_chain_state(texts: list, score: float, header_type: str, time_slot: s
         "texts": texts,
         "score": score,
         "header_type": header_type,
+        "metadata": metadata or {},
+        "chain_id": str(uuid.uuid4()),
         "published_ids": [],
     }
 
@@ -647,11 +991,14 @@ def parse_cli_args(args: list) -> tuple:
 
 def run_legacy(time_slot: str, repo_root: str, user_id: str, token: str) -> None:
     print("\n従来投稿を生成中...")
-    post_text, score, header_type = generate_legacy_post(time_slot, repo_root)
+    post_text, score, header_type, metadata = generate_legacy_post(time_slot, repo_root)
     print(f"\n【生成した従来投稿】（スコア: {score:.1f}、型: {header_type}）")
     print(post_text)
     print("\n従来投稿をThreadsに投稿中...")
     post_id = post_to_threads(post_text, user_id, token)
+    save_legacy_post_to_db(
+        post_text, score, header_type, post_id, time_slot, token, metadata
+    )
     append_legacy_to_log(post_text, score, header_type, post_id, time_slot, repo_root)
     print(f"\n✅ 従来投稿の公開に成功しました！ POST_ID: {post_id}")
 
@@ -665,8 +1012,10 @@ def run_chain(time_slot: str, repo_root: str, user_id: str, token: str) -> None:
         )
     else:
         print("\n新しい投稿チェーンを生成中...")
-        chain_texts, score, header_type = generate_chain_post(time_slot, repo_root)
-        state = create_chain_state(chain_texts, score, header_type, time_slot)
+        chain_texts, score, header_type, metadata = generate_chain_post(time_slot, repo_root)
+        state = create_chain_state(
+            chain_texts, score, header_type, time_slot, metadata
+        )
         save_chain_state(state, repo_root)
 
         print(
@@ -678,6 +1027,7 @@ def run_chain(time_slot: str, repo_root: str, user_id: str, token: str) -> None:
             print(text)
 
     post_ids = publish_chain(state, user_id, token, repo_root)
+    save_chain_to_db(state, post_ids, token)
     append_chain_to_log(
         state["texts"],
         float(state.get("score", 7.5)),
@@ -704,13 +1054,15 @@ if __name__ == "__main__":
     try:
         print("\nThreads認証を確認中...")
         threads_user_id, threads_token = validate_threads_credentials()
+        print("\nSupabase接続を確認中...")
+        validate_supabase_configuration()
 
         if post_mode == "legacy":
             run_legacy(time_slot, repo_root, threads_user_id, threads_token)
         else:
             run_chain(time_slot, repo_root, threads_user_id, threads_token)
 
-    except (ConfigurationError, ThreadsAPIError) as e:
+    except (ConfigurationError, ThreadsAPIError, SupabaseError) as e:
         action_error(str(e))
         print(f"❌ エラー: {e}")
         sys.exit(1)

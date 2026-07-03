@@ -3,6 +3,7 @@ import sys
 import tempfile
 import unittest
 import urllib.parse
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest import mock
 
@@ -15,6 +16,55 @@ SPEC.loader.exec_module(threads_post)
 
 
 class ThreadsPostTests(unittest.TestCase):
+    def test_strategy_mode_is_deterministic(self):
+        now = datetime(2026, 7, 3, tzinfo=timezone.utc)
+        first = threads_post.choose_strategy_mode("morning", now)
+        second = threads_post.choose_strategy_mode("morning", now)
+
+        self.assertEqual(first, second)
+        self.assertIn(first, {"exploit", "explore"})
+
+    def test_parses_generation_metadata(self):
+        response = """
+---TOPIC---
+ブロック後の復縁
+---TOPIC_END---
+---HYPOTHESIS---
+具体的な状況ほど自分事化される
+---HYPOTHESIS_END---
+---VARIABLE_CHANGED---
+親投稿の具体性
+---VARIABLE_CHANGED_END---
+"""
+
+        metadata = threads_post.parse_generation_metadata(response)
+
+        self.assertEqual(metadata["topic"], "ブロック後の復縁")
+        self.assertEqual(metadata["variable_changed"], "親投稿の具体性")
+
+    def test_builds_post_database_payload(self):
+        payload = threads_post._post_db_payload(
+            post_id="thread-1",
+            body="本文",
+            post_kind="parent",
+            posting_mode="chain",
+            time_slot="morning",
+            quality_score=9.0,
+            header_type="B1",
+            metadata={"topic": "冷却期間", "hypothesis": "表示数が伸びる"},
+            details={
+                "timestamp": "2026-07-03T00:00:00+0000",
+                "permalink": "https://www.threads.com/test",
+                "username": "ziro_fukuen_pro",
+            },
+            chain_id="chain-1",
+        )
+
+        self.assertEqual(payload["threads_post_id"], "thread-1")
+        self.assertEqual(payload["topic"], "冷却期間")
+        self.assertEqual(payload["chain_id"], "chain-1")
+        self.assertEqual(payload["generation_metadata"]["source_post_id"], "B1")
+
     def test_parse_cli_args_supports_chain_mode(self):
         self.assertEqual(
             threads_post.parse_cli_args(["chain", "lunch", "/repo"]),

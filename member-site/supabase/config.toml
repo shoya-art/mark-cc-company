@@ -9,3 +9,7 @@ verify_jwt = false
 # Database Webhook から呼ぶ（JWT なし）
 [functions.notify-instructor]
 verify_jwt = false
+
+# GitHub Actions から共有Secret付きで呼ぶ
+[functions.notify-threads-analysis]
+verify_jwt = false

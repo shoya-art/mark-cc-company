@@ -1,0 +1,43 @@
+name: Threads学習ループ
+
+on:
+  schedule:
+    - cron: '30 17 * * *'  # 毎日 2:30 JST
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: threads-learning
+  cancel-in-progress: false
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install anthropic
+
+      - name: Analyze performance and update knowledge
+        run: python scripts/threads_analyze.py
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          THREADS_SUPABASE_URL: ${{ secrets.THREADS_SUPABASE_URL }}
+          THREADS_SUPABASE_SECRET_KEY: ${{ secrets.THREADS_SUPABASE_SECRET_KEY }}
+
+      - name: Notify analysis result to LINE
+        run: python scripts/threads_notify_line.py
+        env:
+          THREADS_LINE_NOTIFY_URL: ${{ secrets.THREADS_LINE_NOTIFY_URL }}
+          THREADS_LINE_NOTIFY_SECRET: ${{ secrets.THREADS_LINE_NOTIFY_SECRET }}
+          THREADS_SUPABASE_URL: ${{ secrets.THREADS_SUPABASE_URL }}
+          THREADS_SUPABASE_SECRET_KEY: ${{ secrets.THREADS_SUPABASE_SECRET_KEY }}
