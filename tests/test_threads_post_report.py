@@ -47,6 +47,10 @@ class ThreadsPostReportTests(unittest.TestCase):
             "平均的",
         )
         self.assertEqual(
+            threads_post_report.performance_label(75, 100)[0],
+            "平均的",
+        )
+        self.assertEqual(
             threads_post_report.performance_label(70, 100)[0],
             "伸びていない",
         )
@@ -91,6 +95,8 @@ class ThreadsPostReportTests(unittest.TestCase):
         self.assertIn("保存：Threads APIでは取得対象外", message)
         self.assertIn("■ 過去20投稿との比較", message)
         self.assertIn("総合判定：伸びた", message)
+        self.assertIn("今回の結果：過去中央値を上回りました。", message)
+        self.assertNotIn("■ 今回の見立て", message)
         self.assertIn("■ 次の投稿方針", message)
         self.assertIn("次に出す投稿：", message)
 

@@ -142,7 +142,7 @@ def performance_label(views: int, baseline_views: float | None) -> tuple[str, fl
     ratio = views / baseline_views
     if ratio >= 1.25:
         return "伸びた", ratio
-    if ratio <= 0.75:
+    if ratio < 0.75:
         return "伸びていない", ratio
     return "平均的", ratio
 
@@ -255,9 +255,7 @@ def format_report(
         f"■ 過去{baseline_count}投稿との比較",
         *comparison_rows(current, baseline),
         f"総合判定：{label}{ratio_text}",
-        "",
-        "■ 今回の見立て",
-        str(plan.get("result_summary") or "").strip(),
+        f"今回の結果：{str(plan.get('result_summary') or '').strip()}",
         f"原因仮説：{str(plan.get('reason_hypothesis') or '').strip()}",
         "",
         "■ 次の投稿方針",

@@ -31,8 +31,9 @@ Never put a Supabase secret key in source control, logs, screenshots, or chat.
    at least five samples before they become knowledge candidates.
 4. New post generation reads evidence-backed knowledge from Supabase. About 70%
    of posts exploit known winners and 30% explore one new variable.
-5. The daily learning workflow sends the latest contrast, chain continuation,
-   problem hypothesis, and next test to the configured LINE user.
+5. Whenever a root post gets its first 24-hour snapshot, the insights workflow
+   sends one LINE report containing the post text, actual metrics, comparison
+   with similar historical posts, and the concrete next-post plan.
 
 LINE credentials remain in the existing member-site Supabase project. The
 `notify-threads-analysis` Edge Function relays messages after validating the
