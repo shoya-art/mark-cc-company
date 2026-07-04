@@ -53,10 +53,11 @@ class ThreadsWorkflowTests(unittest.TestCase):
         learning = LEARNING_WORKFLOW_PATH.read_text(encoding="utf-8")
         self.assertIn("python scripts/threads_backfill.py --limit 25", insights)
         self.assertIn("python scripts/threads_metrics.py", insights)
+        self.assertIn("python scripts/threads_post_report.py", insights)
         self.assertIn("python scripts/threads_analyze.py", learning)
-        self.assertIn("python scripts/threads_notify_line.py", learning)
-        self.assertIn("THREADS_LINE_NOTIFY_URL", learning)
-        self.assertIn("THREADS_LINE_NOTIFY_SECRET", learning)
+        self.assertNotIn("python scripts/threads_notify_line.py", learning)
+        self.assertIn("THREADS_LINE_NOTIFY_URL", insights)
+        self.assertIn("THREADS_LINE_NOTIFY_SECRET", insights)
 
 
 if __name__ == "__main__":

@@ -24,6 +24,9 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install dependencies
+        run: pip install anthropic
+
       - name: Import historical posts and lifetime metrics
         continue-on-error: true
         run: python scripts/threads_backfill.py --limit 25
@@ -36,5 +39,14 @@ jobs:
         run: python scripts/threads_metrics.py
         env:
           THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          THREADS_SUPABASE_URL: ${{ secrets.THREADS_SUPABASE_URL }}
+          THREADS_SUPABASE_SECRET_KEY: ${{ secrets.THREADS_SUPABASE_SECRET_KEY }}
+
+      - name: Create and notify new 24-hour post reports
+        run: python scripts/threads_post_report.py
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          THREADS_LINE_NOTIFY_URL: ${{ secrets.THREADS_LINE_NOTIFY_URL }}
+          THREADS_LINE_NOTIFY_SECRET: ${{ secrets.THREADS_LINE_NOTIFY_SECRET }}
           THREADS_SUPABASE_URL: ${{ secrets.THREADS_SUPABASE_URL }}
           THREADS_SUPABASE_SECRET_KEY: ${{ secrets.THREADS_SUPABASE_SECRET_KEY }}

@@ -1,7 +1,9 @@
 import importlib.util
 import sys
 import unittest
+from types import SimpleNamespace
 from pathlib import Path
+from unittest.mock import patch
 
 
 SCRIPT_PATH = Path(__file__).parents[1] / "scripts" / "threads_analyze.py"
@@ -12,6 +14,37 @@ SPEC.loader.exec_module(threads_analyze)
 
 
 class ThreadsAnalyzeTests(unittest.TestCase):
+    def test_language_review_uses_structured_tool_output(self):
+        rows = [{
+            "id": str(index),
+            "body": f"投稿{index}",
+            "views": 100 + index,
+            "engagement_rate": 0.01,
+        } for index in range(5)]
+        expected = {
+            "summary": "構造化成功",
+            "facts": [],
+            "problems": [],
+            "hypotheses": [],
+            "next_tests": [],
+            "knowledge_candidates": [],
+        }
+        response = SimpleNamespace(content=[
+            SimpleNamespace(type="tool_use", input=expected)
+        ])
+        fake_client = SimpleNamespace(
+            messages=SimpleNamespace(create=lambda **kwargs: response)
+        )
+
+        with patch.dict(threads_analyze.os.environ, {"ANTHROPIC_API_KEY": "test"}), patch.object(
+            threads_analyze.anthropic,
+            "Anthropic",
+            return_value=fake_client,
+        ):
+            result = threads_analyze.language_review(rows)
+
+        self.assertEqual(result, expected)
+
     def test_records_top_bottom_gap_without_claiming_a_cause(self):
         rows = [
             {"id": "high", "views": 500, "engagement_rate": 0.03},

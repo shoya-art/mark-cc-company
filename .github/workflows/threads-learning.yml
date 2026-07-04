@@ -33,11 +33,3 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           THREADS_SUPABASE_URL: ${{ secrets.THREADS_SUPABASE_URL }}
           THREADS_SUPABASE_SECRET_KEY: ${{ secrets.THREADS_SUPABASE_SECRET_KEY }}
-
-      - name: Notify analysis result to LINE
-        run: python scripts/threads_notify_line.py
-        env:
-          THREADS_LINE_NOTIFY_URL: ${{ secrets.THREADS_LINE_NOTIFY_URL }}
-          THREADS_LINE_NOTIFY_SECRET: ${{ secrets.THREADS_LINE_NOTIFY_SECRET }}
-          THREADS_SUPABASE_URL: ${{ secrets.THREADS_SUPABASE_URL }}
-          THREADS_SUPABASE_SECRET_KEY: ${{ secrets.THREADS_SUPABASE_SECRET_KEY }}

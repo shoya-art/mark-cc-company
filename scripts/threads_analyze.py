@@ -30,6 +30,63 @@ DIMENSIONS = (
     ("cta", "cta_type"),
     ("timing", "time_slot"),
 )
+LANGUAGE_REVIEW_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "summary": {"type": "string"},
+        "facts": {"type": "array", "items": {
+            "type": "object",
+            "properties": {
+                "observation": {"type": "string"},
+                "post_ids": {"type": "array", "items": {"type": "string"}},
+            },
+            "required": ["observation", "post_ids"],
+        }},
+        "problems": {"type": "array", "items": {
+            "type": "object",
+            "properties": {
+                "problem": {"type": "string"},
+                "evidence": {"type": "string"},
+                "confidence": {"type": "number"},
+            },
+            "required": ["problem", "evidence", "confidence"],
+        }},
+        "hypotheses": {"type": "array", "items": {
+            "type": "object",
+            "properties": {
+                "hypothesis": {"type": "string"},
+                "confidence": {"type": "number"},
+            },
+            "required": ["hypothesis", "confidence"],
+        }},
+        "next_tests": {"type": "array", "items": {
+            "type": "object",
+            "properties": {
+                "variable": {"type": "string"},
+                "test": {"type": "string"},
+                "target_metric": {"type": "string"},
+            },
+            "required": ["variable", "test", "target_metric"],
+        }},
+        "knowledge_candidates": {"type": "array", "items": {
+            "type": "object",
+            "properties": {
+                "category": {"type": "string"},
+                "rule_text": {"type": "string"},
+                "evidence": {"type": "string"},
+                "post_ids": {"type": "array", "items": {"type": "string"}},
+                "confidence": {"type": "number"},
+            },
+            "required": [
+                "category", "rule_text", "evidence", "post_ids", "confidence"
+            ],
+        }},
+    },
+    "required": [
+        "summary", "facts", "problems", "hypotheses", "next_tests",
+        "knowledge_candidates",
+    ],
+}
 
 
 def median(values: list[float]) -> float:
@@ -271,42 +328,25 @@ def language_review(
 - 次回テストでは変更要素を1つにする
 - 復縁保証や読者否定につながる改善案は禁止
 
-次のJSONだけを返してください。
-{{
-  "summary": "短い要約",
-  "facts": [{{"observation": "数値で確認できること", "post_ids": []}}],
-  "problems": [{{"problem": "問題候補", "evidence": "根拠", "confidence": 0.0}}],
-  "hypotheses": [{{"hypothesis": "原因仮説", "confidence": 0.0}}],
-  "next_tests": [{{"variable": "変える要素1つ", "test": "具体的なテスト", "target_metric": "views等"}}],
-  "knowledge_candidates": [{{
-    "category": "topic|hook|cut|psychology|tone|readability|cta|timing|other",
-    "rule_text": "上位と下位の差から得た再利用可能な仮説",
-    "evidence": "上位と下位の具体的な差",
-    "post_ids": ["根拠にしたDB投稿ID"],
-    "confidence": 0.0
-  }}]
-}}"""
+指定された構造化ツールで分析結果を提出してください。"""
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
     response = client.messages.create(
         model=MODEL,
         max_tokens=2500,
+        tools=[{
+            "name": "submit_language_review",
+            "description": "上位投稿と下位投稿の比較分析を提出する",
+            "input_schema": LANGUAGE_REVIEW_SCHEMA,
+        }],
+        tool_choice={"type": "tool", "name": "submit_language_review"},
         messages=[{"role": "user", "content": prompt}],
     )
-    text = response.content[0].text.strip()
-    if text.startswith("```"):
-        text = text.split("\n", 1)[1].rsplit("```", 1)[0]
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        return {
-            "summary": "言語分析のJSON解析に失敗しました。",
-            "facts": [],
-            "problems": [],
-            "hypotheses": [],
-            "next_tests": [],
-            "knowledge_candidates": [],
-            "raw": text[:2000],
-        }
+    for block in response.content:
+        if getattr(block, "type", "") == "tool_use":
+            result = getattr(block, "input", None)
+            if isinstance(result, dict):
+                return result
+    raise ValueError("言語分析の構造化結果を取得できませんでした。")
 
 
 def save_language_knowledge(
