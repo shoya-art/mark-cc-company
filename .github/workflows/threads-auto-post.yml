@@ -2,18 +2,17 @@ name: Threads自動投稿
 
 on:
   schedule:
-    - cron: '0 22 * * 0-4'   # 新チェーン: 月〜金 7:00 JST
-    - cron: '50 22 * * 0-4'  # 月〜金 7:50 JST (= 日〜木 22:50 UTC)
-    - cron: '0 3 * * 1-5'    # 新チェーン: 月〜金 12:00 JST
-    - cron: '20 3 * * 1-5'   # 月〜金 12:20 JST
-    - cron: '0 12 * * 1-5'   # 新チェーン: 月〜金 21:00 JST
-    - cron: '30 12 * * 1-5'  # 月〜金 21:30 JST
+    - cron: '0 21 * * *'  # 毎日 6:00 JST
+    - cron: '0 22 * * *'  # 毎日 7:00 JST
+    - cron: '0 11 * * *'  # 毎日 20:00 JST
+    - cron: '0 12 * * *'  # 毎日 21:00 JST
+    - cron: '0 13 * * *'  # 毎日 22:00 JST
   workflow_dispatch:
     inputs:
       post_mode:
         description: '投稿方式'
         required: true
-        default: 'legacy'
+        default: 'chain'
         type: choice
         options:
           - legacy
@@ -63,28 +62,12 @@ jobs:
             # Scheduled jobs can start more than an hour late. Determine the slot
             # from the cron expression that triggered the run, not the start time.
             case "${{ github.event.schedule }}" in
-              '0 22 * * 0-4')
+              '0 21 * * *'|'0 22 * * *')
                 echo "mode=chain" >> $GITHUB_OUTPUT
                 echo "slot=morning" >> $GITHUB_OUTPUT
                 ;;
-              '50 22 * * 0-4')
-                echo "mode=legacy" >> $GITHUB_OUTPUT
-                echo "slot=morning" >> $GITHUB_OUTPUT
-                ;;
-              '0 3 * * 1-5')
+              '0 11 * * *'|'0 12 * * *'|'0 13 * * *')
                 echo "mode=chain" >> $GITHUB_OUTPUT
-                echo "slot=lunch" >> $GITHUB_OUTPUT
-                ;;
-              '20 3 * * 1-5')
-                echo "mode=legacy" >> $GITHUB_OUTPUT
-                echo "slot=lunch" >> $GITHUB_OUTPUT
-                ;;
-              '0 12 * * 1-5')
-                echo "mode=chain" >> $GITHUB_OUTPUT
-                echo "slot=evening" >> $GITHUB_OUTPUT
-                ;;
-              '30 12 * * 1-5')
-                echo "mode=legacy" >> $GITHUB_OUTPUT
                 echo "slot=evening" >> $GITHUB_OUTPUT
                 ;;
               *)

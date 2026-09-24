@@ -1,0 +1,26 @@
+name = "jiro-threads-v2"
+main = "src/worker.js"
+compatibility_date = "2026-09-24"
+workers_dev = true
+
+[triggers]
+# 5-minute tick: publishing and initial-velocity metrics.
+# 18:05 UTC = 03:05 JST: token-expiry maintenance only.
+crons = ["*/5 * * * *", "5 18 * * *"]
+
+[vars]
+# Explicit opt-in after credentials and billing have been verified.
+ENABLE_AI = "false"
+ENABLE_PUBLISH = "false"
+ENABLE_REFRESH = "true"
+MODEL = "gpt-5.6-sol"
+MONTHLY_CAP_USD = "20"
+WARNING_USD = "16"
+THREADS_USER_ID = "26439768865674129"
+THREADS_TOKEN_EXPIRES_AT = "2026-11-23T07:22:04Z"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "jiro-threads-v2"
+database_id = "fba758f5-8053-4afe-a17c-1425fe5098f7"
+migrations_dir = "migrations"
