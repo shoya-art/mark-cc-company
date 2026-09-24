@@ -287,6 +287,11 @@ export default {
     await prepare(env,body.date); return Response.json({ok:true});
    }
    return new Response('Not found',{status:404});
-  } catch { return Response.json({ok:false,error:'operation_failed_check_health'},{status:409}); }
+  } catch(e) {
+   // This endpoint is already admin-authenticated. Return only the worker's
+   // normalized error code; provider responses and credentials are never used.
+   const error=String(e?.message||'operation_failed').replace(/[^a-zA-Z0-9_/]/g,'_').slice(0,100);
+   return Response.json({ok:false,error},{status:409});
+  }
  }
 };
