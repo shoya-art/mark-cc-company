@@ -10,8 +10,8 @@ crons = ["*/5 * * * *", "5 18 * * *"]
 
 [vars]
 # Explicit opt-in after credentials and billing have been verified.
-ENABLE_AI = "false"
-ENABLE_PUBLISH = "false"
+ENABLE_AI = "true"
+ENABLE_PUBLISH = "true"
 ENABLE_REFRESH = "true"
 MODEL = "gpt-5.6-sol"
 MONTHLY_CAP_USD = "20"

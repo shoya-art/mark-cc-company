@@ -1,9 +1,9 @@
 # ジロー Threads v2
 
-2026-09-24: Cloudflare本番へ配備済み。**AI生成・公開投稿は停止中、有料API未実行**。
+2026-09-25: Cloudflare本番で**AI生成・公開投稿を有効化済み**。
 旧Python版を壊さず、Cloudflare Workers + D1 で独立運用する。
 Threads再認証、D1、暗号化トークン保存、自動更新、LINE通知、OpenAIキー登録まで設定済み。
-開始には有料AI生成の許可、生成結果の確認、公開フラグの順次有効化が必要。
+初回の2026-09-26分5組は生成・形式確認・予約済み。初回実投稿と公開後計測は未確認。
 
 本番URL: https://jiro-threads-v2.jiro-threads-v2.workers.dev
 
@@ -87,13 +87,14 @@ npx wrangler@4.137.0 deploy
 
 1. 完了: D1・管理認証・Threads長期トークン・LINE通知を本番設定。
 2. 完了: `/bootstrap`、5分heartbeat、未認証401、認証済み200、LINEテスト通知を確認。
-3. 維持: `ENABLE_REFRESH=true`、`ENABLE_AI=false`、`ENABLE_PUBLISH=false`。
+3. 完了: `ENABLE_REFRESH=true`でトークン自動更新を維持。
 4. 完了: 1年期限・生成リクエスト限定のOpenAI APIキーをCloudflare Secretへ登録。
-5. 課金許可後: `ENABLE_AI=true`、`ENABLE_PUBLISH=false`で翌日5組だけ生成する。
-6. D1 `jobs.payload` の改行・文言・リンクを人が確認してから `ENABLE_PUBLISH=true` にする。
-7. 初回実投稿後、親ID・子ID・1h snapshot・レポート・利用額を確認する。
+5. 完了: `ENABLE_AI=true`、`ENABLE_PUBLISH=false`で2026-09-26分5組を生成。
+6. 完了: D1 `jobs.payload` の改行・文言・リンクを確認し、`ENABLE_PUBLISH=true`へ変更。
+7. 未確認: 初回実投稿後、親ID・子ID・1h snapshot・レポートを確認する。
 
-OpenAIキーの有効期限は2027-09-24。期限前に新しいキーへ手動ローテーションする。
+初回生成の実測費用は$0.044268（入力652、出力2083トークン）。
+OpenAIキーの有効期限は2027-09-25。期限前に新しいキーへ手動ローテーションする。
 
 古いThreads GitHubワークフローはdisabledのまま維持し、二重起動させない。
 
