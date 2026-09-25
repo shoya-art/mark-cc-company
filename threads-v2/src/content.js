@@ -1,4 +1,6 @@
-export const LP = 'https://jiro-hukuen-lp-179.sss1127.chatgpt.site';
+export const LINE_URL = 'https://lin.ee/sPZRcjg';
+export const FIXED_CTA = `こちらから相談できます↓
+${LINE_URL}`;
 export const HOURS = [6, 7, 20, 21, 22];
 export const RULES = `あなたは復縁アドバイザー・ジローのThreads編集者。
 対象は将来を考えていた彼を失い、周囲の結婚に焦りながら復縁を望むアラサー女性。
@@ -13,8 +15,9 @@ export const RULES = `あなたは復縁アドバイザー・ジローのThreads
 子②:「あなたは何個当てはまりましたか？」などテーマに合う問いから開始し空行。
 当てはまる人に希望、普通の毎日をもう一度過ごしたい気持ちへの共感、
 連絡か待つかは状況次第、1人で迷うなら状況を聞かせてほしい、個別相談の順。
-締めは「僕と一緒に復縁を頑張りたい方は\nこちらから相談できます。」
-リンクはシステム側が最後に付けるため本文には書かない。
+締めは「僕と一緒に復縁を頑張りたい方は」。
+その直後にシステム側が「こちらから相談できます↓」とLINEリンクを必ず付けるため、
+本文には誘導文やURLを重複して書かない。
 全員に同じ心理を断定しない。「復縁できます」「成功率が1番高い」等の保証・未検証の優位性は使わず、
 「今の2人に合った復縁方法を、僕があなたと一緒に考えます」とする。
 事実のない相談実績・成功例・心理学用語を作らない。拒絶やブロックを無視して追わせない。
@@ -31,10 +34,10 @@ export function validateChain(chain) {
  const marks = details.match(/[①②③④⑤⑥⑦⑧⑨]/g) || [];
  if (marks.join('') !== '①②③④⑤⑥'.slice(0, Number(match[1]))) throw new Error('item_count');
  if (!/^あなた[^\n]*何個[^\n]*[？?]\n\n/.test(cta)) throw new Error('cta_question');
- if (!cta.endsWith('僕と一緒に復縁を頑張りたい方は\nこちらから相談できます。')) throw new Error('cta_ending');
+ if (!cta.endsWith('僕と一緒に復縁を頑張りたい方は')) throw new Error('cta_ending');
  if (/(https?:\/\/|必ず復縁|絶対に復縁|復縁できます|成功率が[一1]番|1番成功率)/.test([parent,details,cta].join('\n'))) throw new Error('unsupported_claim_or_link');
  if ([...details].length > 440 || [...cta].length > 400) throw new Error('text_limit');
- const texts = [parent, details, cta + '\n\n' + LP];
+ const texts = [parent, details, cta + '\n' + FIXED_CTA];
  for (const text of texts) {
   if ([...text].length > 500) throw new Error('platform_limit');
   for (const block of text.split('\n\n')) if (block.split('\n').length > 3) throw new Error('paragraph_limit');

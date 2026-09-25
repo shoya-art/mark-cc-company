@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
-import {LP,validateChain,validateBatch,schedule,dueWindows,jstDate,compare,cost} from '../src/content.js';
+import {LINE_URL,FIXED_CTA,validateChain,validateBatch,schedule,dueWindows,jstDate,compare,cost} from '../src/content.js';
 import worker,{ai,bootstrap,prepare,publish,tick,tokenMaintenance,dashboardData} from '../src/worker.js';
 import {dashboardHTML} from '../src/dashboard.js';
 
 function chain(n=0) {
  return {parent:['男性が復縁を考える瞬間って……','復縁したら幸せになれる2人って……','彼があなたを思い出す瞬間って……','復縁を考える2人の共通点って……','彼との関係を見直すきっかけって……'][n],
  details:'実は、4つあるんです！！\n\n①日常を楽しめた\nご飯の時間も大切な思い出です。\n\n②素を見せられた\n安心感は大切です。\n\n③支え合えた\n大切にした時間は残ります。\n\n④話し合える\nこれからを一緒に考えられます。',
- cta:'あなたは何個当てはまりましたか？\n\n今は別れていても、\n関係を考え直す可能性はあります。\n\n今の2人に合った方法を\n僕が一緒に考えます。\n\n僕と一緒に復縁を頑張りたい方は\nこちらから相談できます。',hook_type:'特徴'+n};
+ cta:'あなたは何個当てはまりましたか？\n\n今は別れていても、\n関係を考え直す可能性はあります。\n\n今の2人に合った方法を\n僕が一緒に考えます。\n\n僕と一緒に復縁を頑張りたい方は',hook_type:'特徴'+n};
 }
 function env() {
  const db=new DatabaseSync(':memory:');
@@ -26,8 +26,10 @@ function env() {
 const response=data=>new Response(JSON.stringify(data),{status:200});
 function llm(posts=Array.from({length:5},(_,i)=>chain(i))) { return response({status:'completed',usage:{input_tokens:2000,output_tokens:3000},output:[{content:[{type:'output_text',text:JSON.stringify({posts})}]}]}); }
 
-test('content has three parts, one LP and mandatory blank line',()=>{
- const texts=validateChain(chain()); assert.equal(texts.length,3);assert.ok(texts[2].endsWith(LP));
+test('content has three parts, one fixed LINE CTA and mandatory blank line',()=>{
+ const texts=validateChain(chain()); assert.equal(texts.length,3);assert.ok(texts[2].endsWith(FIXED_CTA));
+ assert.equal(texts[2].split(LINE_URL).length-1,1);
+ assert.match(texts[2],/僕と一緒に復縁を頑張りたい方は\nこちらから相談できます↓\nhttps:\/\/lin\.ee\/sPZRcjg$/);
  assert.throws(()=>validateChain({...chain(),details:chain().details.replace('！！\n\n','！！\n')}));
  assert.throws(()=>validateChain({...chain(),details:chain().details.replace('4つ','5つ')}));
  assert.throws(()=>validateChain({...chain(),cta:chain().cta.replace('可能性はあります','必ず復縁できます')}));
@@ -121,6 +123,7 @@ test('read-only dashboard requires its own token and never exposes credentials',
  assert.equal(res.status,200);const body=await res.text();assert.match(body,/男性が復縁/);
  assert.ok(!body.includes('test-token'));assert.ok(!body.includes(e.ADMIN_TOKEN));assert.ok(!body.includes(e.DASHBOARD_TOKEN));
  const data=await dashboardData(e);assert.equal(data.jobs.length,1);assert.equal(data.jobs[0].parent,chain().parent);
+ assert.ok(data.jobs[0].cta.endsWith(FIXED_CTA));assert.equal(data.jobs[0].cta.split(LINE_URL).length-1,1);
  const script=dashboardHTML().match(/<script>([\s\S]*)<\/script>/)?.[1];
  assert.ok(script);assert.doesNotThrow(()=>new vm.Script(script));
 });

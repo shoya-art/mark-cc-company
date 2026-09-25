@@ -298,7 +298,12 @@ export async function dashboardData(env,now=new Date()) {
   latest_analysis:json(latestAnalysis),monthly_spend:Number(spend?.usd||0),
   monthly_cap:Number(env.MONTHLY_CAP_USD),flags:{ai:env.ENABLE_AI==='true',publishing:env.ENABLE_PUBLISH==='true',refresh:env.ENABLE_REFRESH==='true'},
   job_counts:jobCounts,alerts,performance,
-  jobs:jobs.map(row=>{const payload=json(row.payload)||{};return {...row,payload:undefined,parent:payload.parent||'',details:payload.details||'',cta:payload.cta||'',hook_type:payload.hook_type||''};})
+  jobs:jobs.map(row=>{
+   const payload=json(row.payload)||{};
+   let finalCta=payload.cta||'';
+   try { finalCta=validateChain(payload)[2]; } catch { /* keep malformed drafts visible for review */ }
+   return {...row,payload:undefined,parent:payload.parent||'',details:payload.details||'',cta:finalCta,hook_type:payload.hook_type||''};
+  })
  };
 }
 
