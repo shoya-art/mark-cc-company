@@ -2,8 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
 import {LP,validateChain,validateBatch,schedule,dueWindows,jstDate,compare,cost} from '../src/content.js';
-import worker,{ai,bootstrap,prepare,publish,tick,tokenMaintenance} from '../src/worker.js';
+import worker,{ai,bootstrap,prepare,publish,tick,tokenMaintenance,dashboardData} from '../src/worker.js';
+import {dashboardHTML} from '../src/dashboard.js';
 
 function chain(n=0) {
  return {parent:['男性が復縁を考える瞬間って……','復縁したら幸せになれる2人って……','彼があなたを思い出す瞬間って……','復縁を考える2人の共通点って……','彼との関係を見直すきっかけって……'][n],
@@ -19,7 +21,7 @@ function env() {
   run:async()=>({meta:{changes:Number(db.prepare(sql).run(...args).changes)}})});
  return {raw:db,DB:{prepare:sql=>wrap(sql),batch:async statements=>{
   db.exec('BEGIN');try{const r=[];for(const s of statements)r.push(await s.run());db.exec('COMMIT');return r;}catch(e){db.exec('ROLLBACK');throw e;}
- }},MODEL:'gpt-5.6-sol',MONTHLY_CAP_USD:'20',WARNING_USD:'16',OPENAI_API_KEY:'test',ENABLE_AI:'true',ENABLE_PUBLISH:'false',ENABLE_REFRESH:'false',THREADS_USER_ID:'123',THREADS_ACCESS_TOKEN:'test-token',TOKEN_ENCRYPTION_KEY:Buffer.alloc(32,1).toString('base64'),THREADS_TOKEN_EXPIRES_AT:new Date(Date.now()+60*86400000).toISOString(),ADMIN_TOKEN:'a'.repeat(32)};
+ }},MODEL:'gpt-5.6-sol',MONTHLY_CAP_USD:'20',WARNING_USD:'16',OPENAI_API_KEY:'test',ENABLE_AI:'true',ENABLE_PUBLISH:'false',ENABLE_REFRESH:'false',THREADS_USER_ID:'123',THREADS_ACCESS_TOKEN:'test-token',TOKEN_ENCRYPTION_KEY:Buffer.alloc(32,1).toString('base64'),THREADS_TOKEN_EXPIRES_AT:new Date(Date.now()+60*86400000).toISOString(),ADMIN_TOKEN:'a'.repeat(32),DASHBOARD_TOKEN:'d'.repeat(32)};
 }
 const response=data=>new Response(JSON.stringify(data),{status:200});
 function llm(posts=Array.from({length:5},(_,i)=>chain(i))) { return response({status:'completed',usage:{input_tokens:2000,output_tokens:3000},output:[{content:[{type:'output_text',text:JSON.stringify({posts})}]}]}); }
@@ -107,6 +109,20 @@ test('disabled deployment has zero API traffic, health requires authentication',
  assert.equal((await worker.fetch(new Request('https://local/health'),e)).status,401);
  const res=await worker.fetch(new Request('https://local/health',{headers:{Authorization:'Bearer '+e.ADMIN_TOKEN}}),e);
  assert.equal(res.status,200);assert.ok(!(await res.text()).includes('test-token'));
+});
+
+test('read-only dashboard requires its own token and never exposes credentials',async()=>{
+ const e=env();
+ e.raw.prepare('INSERT INTO jobs(id,scheduled_at,payload,updated_at) VALUES (?,?,?,?)').run('2026-09-25/6',new Date().toISOString(),JSON.stringify(chain()),new Date().toISOString());
+ const page=await worker.fetch(new Request('https://local/admin'),e);
+ assert.equal(page.status,200);assert.match(page.headers.get('content-type'),/text\/html/);
+ assert.equal((await worker.fetch(new Request('https://local/admin/data'),e)).status,401);
+ const res=await worker.fetch(new Request('https://local/admin/data',{headers:{Authorization:'Bearer '+e.DASHBOARD_TOKEN}}),e);
+ assert.equal(res.status,200);const body=await res.text();assert.match(body,/男性が復縁/);
+ assert.ok(!body.includes('test-token'));assert.ok(!body.includes(e.ADMIN_TOKEN));assert.ok(!body.includes(e.DASHBOARD_TOKEN));
+ const data=await dashboardData(e);assert.equal(data.jobs.length,1);assert.equal(data.jobs[0].parent,chain().parent);
+ const script=dashboardHTML().match(/<script>([\s\S]*)<\/script>/)?.[1];
+ assert.ok(script);assert.doesNotThrow(()=>new vm.Script(script));
 });
 
 test('tick captures actual 1h sample once and excludes child posts',async t=>{

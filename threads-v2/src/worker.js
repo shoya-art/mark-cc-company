@@ -1,4 +1,5 @@
 import {RULES, HOURS, validateBatch, validateChain, schedule, jstDate, nextDate, dueWindows, cost, compare} from './content.js';
+import {dashboardHTML} from './dashboard.js';
 
 const API = 'https://graph.threads.net/v1.0';
 const iso = () => new Date().toISOString();
@@ -6,6 +7,7 @@ const query = (env, sql, ...args) => env.DB.prepare(sql).bind(...args);
 const all = async (env, sql, ...args) => (await query(env,sql,...args).all()).results;
 async function state(env,key) { return (await query(env,'SELECT value FROM state WHERE key=?',key).first())?.value; }
 async function save(env,key,value) { await query(env,'INSERT INTO state(key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',key,value).run(); }
+function json(value) { try { return value ? JSON.parse(value) : null; } catch { return null; } }
 
 async function request(url, options = {}) {
  const res = await fetch(url, {...options, signal: AbortSignal.timeout(90000)});
@@ -262,11 +264,53 @@ export async function tokenMaintenance(env,now=new Date()) {
  try { await notify(env); } catch { /* the alert remains pending for the next notifier run */ }
 }
 
-async function authorized(request,env) {
- if(!env.ADMIN_TOKEN || env.ADMIN_TOKEN.length<32) return false;
+export async function dashboardData(env,now=new Date()) {
+ const month=jstDate(now).slice(0,7);
+ const [jobs,performance,jobCounts,alerts,spend,heartbeat,tokenMeta,latestAnalysis]=await Promise.all([
+  all(env,`SELECT id,scheduled_at,status,part,error,updated_at,payload
+   FROM jobs ORDER BY scheduled_at DESC LIMIT 100`),
+  all(env,`SELECT p.id,p.job_id,p.body,p.published_at,p.slot,p.hook_type,
+   MAX(CASE WHEN s.window='1h' THEN s.views END) AS views_1h,
+   MAX(CASE WHEN s.window='1h' THEN s.likes END) AS likes_1h,
+   MAX(CASE WHEN s.window='1h' THEN s.reposts END) AS reposts_1h,
+   MAX(CASE WHEN s.window='6h' THEN s.views END) AS views_6h,
+   MAX(CASE WHEN s.window='6h' THEN s.likes END) AS likes_6h,
+   MAX(CASE WHEN s.window='6h' THEN s.reposts END) AS reposts_6h,
+   MAX(CASE WHEN s.window='24h' THEN s.views END) AS views_24h,
+   MAX(CASE WHEN s.window='24h' THEN s.likes END) AS likes_24h,
+   MAX(CASE WHEN s.window='24h' THEN s.reposts END) AS reposts_24h,
+   MAX(CASE WHEN s.window='72h' THEN s.views END) AS views_72h,
+   MAX(CASE WHEN s.window='72h' THEN s.likes END) AS likes_72h,
+   MAX(CASE WHEN s.window='72h' THEN s.reposts END) AS reposts_72h,
+   MAX(CASE WHEN s.window='7d' THEN s.views END) AS views_7d,
+   MAX(CASE WHEN s.window='7d' THEN s.likes END) AS likes_7d,
+   MAX(CASE WHEN s.window='7d' THEN s.reposts END) AS reposts_7d
+   FROM posts p LEFT JOIN snapshots s ON s.post_id=p.id
+   WHERE p.part=0 GROUP BY p.id,p.job_id,p.body,p.published_at,p.slot,p.hook_type
+   ORDER BY p.published_at DESC LIMIT 100`),
+  all(env,'SELECT status,COUNT(*) AS count FROM jobs GROUP BY status'),
+  all(env,'SELECT id,message,created_at,sent_at FROM alerts ORDER BY created_at DESC LIMIT 30'),
+  query(env,'SELECT COALESCE(SUM(COALESCE(actual_usd,reserved_usd)),0) AS usd FROM ai_runs WHERE month=?',month).first(),
+  state(env,'heartbeat'),state(env,'token_meta'),state(env,'latest_analysis')
+ ]);
+ return {
+  generated_at:now.toISOString(),heartbeat,token_meta:json(tokenMeta),
+  latest_analysis:json(latestAnalysis),monthly_spend:Number(spend?.usd||0),
+  monthly_cap:Number(env.MONTHLY_CAP_USD),flags:{ai:env.ENABLE_AI==='true',publishing:env.ENABLE_PUBLISH==='true',refresh:env.ENABLE_REFRESH==='true'},
+  job_counts:jobCounts,alerts,performance,
+  jobs:jobs.map(row=>{const payload=json(row.payload)||{};return {...row,payload:undefined,parent:payload.parent||'',details:payload.details||'',cta:payload.cta||'',hook_type:payload.hook_type||''};})
+ };
+}
+
+async function bearerAuthorized(request,secret) {
+ if(!secret || secret.length<32) return false;
  const hash=async text=>new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text)));
- const [a,b]=await Promise.all([hash(request.headers.get('Authorization')||''),hash('Bearer '+env.ADMIN_TOKEN)]);
+ const [a,b]=await Promise.all([hash(request.headers.get('Authorization')||''),hash('Bearer '+secret)]);
  return a.reduce((n,v,i)=>n|(v^b[i]),0)===0;
+}
+const authorized=(request,env)=>bearerAuthorized(request,env.ADMIN_TOKEN);
+async function dashboardAuthorized(request,env) {
+ return await bearerAuthorized(request,env.DASHBOARD_TOKEN) || await authorized(request,env);
 }
 export default {
  async scheduled(event,env,ctx) {
@@ -274,8 +318,13 @@ export default {
   ctx.waitUntil(event.cron==='5 18 * * *' ? tokenMaintenance(env,now) : tick(env,now));
  },
  async fetch(request,env) {
-  if(!await authorized(request,env)) return new Response('Unauthorized',{status:401});
   const path=new URL(request.url).pathname;
+  if(request.method==='GET' && path==='/admin') return new Response(dashboardHTML(),{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Content-Security-Policy':"default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; img-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",'Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff','X-Frame-Options':'DENY'}});
+  if(request.method==='GET' && path==='/admin/data') {
+   if(!await dashboardAuthorized(request,env)) return new Response('Unauthorized',{status:401});
+   return Response.json(await dashboardData(env),{headers:{'Cache-Control':'no-store'}});
+  }
+  if(!await authorized(request,env)) return new Response('Unauthorized',{status:401});
   try {
    if(request.method==='GET' && path==='/health') {
     return Response.json({heartbeat:await state(env,'heartbeat'),token_meta:JSON.parse(await state(env,'token_meta')||'null'),ai:env.ENABLE_AI==='true',publishing:env.ENABLE_PUBLISH==='true',jobs:await all(env,'SELECT status,COUNT(*) AS count FROM jobs GROUP BY status'),alerts:await all(env,'SELECT id,message,sent_at FROM alerts ORDER BY created_at DESC LIMIT 20')});

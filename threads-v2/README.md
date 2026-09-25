@@ -59,6 +59,7 @@ npx wrangler@4.137.0 d1 migrations apply jiro-threads-v2 --remote
 | THREADS_ACCESS_TOKEN | 新しく交換した長期トークン（既存の期限切れは不可） |
 | TOKEN_ENCRYPTION_KEY | ランダム32バイトのbase64。D1保存トークンをAES-GCM暗号化 |
 | ADMIN_TOKEN | ランダム32文字以上。管理API専用 |
+| DASHBOARD_TOKEN | ランダム32文字以上。読み取り専用管理画面専用 |
 | THREADS_LINE_NOTIFY_URL | 既存のLINE通知中継URL |
 | THREADS_LINE_NOTIFY_SECRET | 既存の通知中継Secret |
 
@@ -79,6 +80,8 @@ npx wrangler@4.137.0 deploy
 ```
 
 管理API:
+- GET /admin: 読み取り専用の運用ダッシュボード。予約、投稿、初速、AI費用、警告を表示。
+- GET /admin/data: DASHBOARD_TOKENまたはADMIN_TOKENで認証するダッシュボード用JSON。
 - GET /health: 認証必須。最終起動、モード、期限、キュー件数、警告。トークンを返さない。
 - POST /bootstrap: 登録済みSecretから初期トークン登録。再認証時も使用。
 - POST /prepare: `{"date":"翌日のYYYY-MM-DD"}`。ENABLE_AI=trueのときのみ**有料生成**。
@@ -92,6 +95,9 @@ npx wrangler@4.137.0 deploy
 5. 完了: `ENABLE_AI=true`、`ENABLE_PUBLISH=false`で2026-09-26分5組を生成。
 6. 完了: D1 `jobs.payload` の改行・文言・リンクを確認し、`ENABLE_PUBLISH=true`へ変更。
 7. 未確認: 初回実投稿後、親ID・子ID・1h snapshot・レポートを確認する。
+
+管理画面: https://jiro-threads-v2.jiro-threads-v2.workers.dev/admin
+読み取り専用キーはMacキーチェーン `jiro-threads-v2-dashboard` に保存する。
 
 初回生成の実測費用は$0.044268（入力652、出力2083トークン）。
 OpenAIキーの有効期限は2027-09-25。期限前に新しいキーへ手動ローテーションする。
