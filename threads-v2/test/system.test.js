@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
-import {LINE_URL,FIXED_CTA,validateChain,validateBatch,schedule,dueWindows,jstDate,compare,cost} from '../src/content.js';
+import {LINE_URL,FIXED_CTA,normalizeBatch,validateChain,validateBatch,schedule,dueWindows,jstDate,compare,cost} from '../src/content.js';
 import worker,{ai,bootstrap,prepare,publish,tick,tokenMaintenance,dashboardData} from '../src/worker.js';
 import {dashboardHTML} from '../src/dashboard.js';
 
@@ -35,6 +35,15 @@ test('content has three parts, one fixed LINE CTA and mandatory blank line',()=>
  assert.throws(()=>validateChain({...chain(),cta:chain().cta.replace('可能性はあります','必ず復縁できます')}));
  assert.throws(()=>validateBatch({posts:Array(5).fill(chain())}));
  assert.throws(()=>validateChain({...chain(),cta:'あ'.repeat(500)}));
+});
+test('generated CTA question variants are normalized to the required opening',()=>{
+ const value={posts:Array.from({length:5},(_,i)=>({...chain(i),cta:chain(i).cta
+  .replace('あなたは何個当てはまりましたか？','心当たりはいくつありましたか？')
+  .replace('今は別れていても、\n関係を考え直す可能性はあります。','今は別れていても関係を考え直す可能性は残っているかもしれません。')}))};
+ const normalized=normalizeBatch(value);assert.equal(validateBatch(normalized).length,5);
+ assert.ok(normalized.posts.every(p=>p.cta.startsWith('あなたは何個当てはまりましたか？\n\n')));
+ assert.ok(normalized.posts.every(p=>p.cta.split('\n').every(line=>[...line].length<=32)));
+ assert.ok(normalized.posts.every(p=>p.cta.endsWith('\n\n僕と一緒に復縁を頑張りたい方は')));
 });
 test('daily JST slots including UTC previous day',()=>{
  assert.deepEqual(schedule('2026-09-25'),['2026-09-24T21:00:00.000Z','2026-09-24T22:00:00.000Z','2026-09-25T11:00:00.000Z','2026-09-25T12:00:00.000Z','2026-09-25T13:00:00.000Z']);

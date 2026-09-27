@@ -53,6 +53,30 @@ export function validateBatch(value) {
  return value.posts;
 }
 
+export function normalizeBatch(value) {
+ if (!Array.isArray(value?.posts)) return value;
+ const wrap=text=>text.split('\n\n').flatMap(block=>{
+  const lines=block.split('\n').flatMap(line=>{
+   const chars=[...line], parts=[];
+   for(let i=0;i<chars.length;i+=32) parts.push(chars.slice(i,i+32).join(''));
+   return parts.length ? parts : [''];
+  });
+  const groups=[];
+  for(let i=0;i<lines.length;i+=3) groups.push(lines.slice(i,i+3).join('\n'));
+  return groups;
+ }).join('\n\n');
+ return {
+  ...value,
+  posts:value.posts.map(post=>{
+   if (!post || typeof post!=='object' || typeof post.cta!=='string') return post;
+   const cta=wrap(post.cta.trim().replace(/^[^\n]+/, 'あなたは何個当てはまりましたか？'))
+    .replace(/\n+僕と一緒に復縁を頑張りたい方は$/, '\n\n僕と一緒に復縁を頑張りたい方は');
+   const details=typeof post.details==='string' ? wrap(post.details.trim()) : post.details;
+   return {...post,details,cta};
+  })
+ };
+}
+
 export function schedule(date) {
  return HOURS.map(hour => new Date(`${date}T${String(hour).padStart(2,'0')}:00:00+09:00`).toISOString());
 }
