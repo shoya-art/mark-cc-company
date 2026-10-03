@@ -33,6 +33,8 @@ test('content has three parts, one fixed LINE CTA and mandatory blank line',()=>
  assert.throws(()=>validateChain({...chain(),details:chain().details.replace('！！\n\n','！！\n')}));
  assert.throws(()=>validateChain({...chain(),details:chain().details.replace('4つ','5つ')}));
  assert.throws(()=>validateChain({...chain(),cta:chain().cta.replace('可能性はあります','必ず復縁できます')}));
+ assert.doesNotThrow(()=>validateChain({...chain(),parent:'絶対に復縁した方がいい2人の特徴って……'}));
+ assert.throws(()=>validateChain({...chain(),parent:'絶対に復縁できる2人の特徴って……'}));
  assert.throws(()=>validateBatch({posts:Array(5).fill(chain())}));
  assert.throws(()=>validateChain({...chain(),cta:'あ'.repeat(500)}));
 });
@@ -63,6 +65,30 @@ test('AI charges tracked once, completed result reused',async t=>{
  await prepare(e,'2026-09-25');await prepare(e,'2026-09-25');
  assert.equal(calls,1);assert.equal(e.raw.prepare('SELECT COUNT(*) n FROM jobs').get().n,5);
  const run=e.raw.prepare('SELECT * FROM ai_runs').get();assert.equal(run.actual_usd,cost(2000,3000));
+});
+test('generation receives measured winning hook structure with same-slot 1h and 24h context',async t=>{
+ const e=env();let prompt='';
+ const published=new Date(Date.now()-2*86400000).toISOString();
+ for(let i=0;i<6;i++) {
+  const job='past/'+i,id='past-post-'+i;
+  const body=i===5?'男性が別れた彼女との復縁を考え始める瞬間って……':'比較用フック'+i+'って……';
+  e.raw.prepare('INSERT INTO jobs(id,scheduled_at,payload,updated_at) VALUES (?,?,?,?)')
+   .run(job,published,'{}',published);
+  e.raw.prepare('INSERT INTO posts(id,job_id,part,body,published_at,slot,hook_type) VALUES (?,?,?,?,?,?,?)')
+   .run(id,job,0,body,published,6,'彼目線');
+  for(const [window,views] of [['1h',(i+1)*100],['24h',(i+1)*1000]])
+   e.raw.prepare('INSERT INTO snapshots VALUES (?,?,?,?,?,?,?)')
+    .run(id,window,published,window==='1h'?60:1440,views,6,2);
+ }
+ t.mock.method(globalThis,'fetch',async(_url,options)=>{
+  prompt=JSON.parse(options.body).input;return llm();
+ });
+ const date=jstDate(new Date(Date.now()+86400000));
+ await prepare(e,date);
+ assert.match(prompt,/男性が別れた彼女との復縁を考え始める瞬間って/);
+ assert.match(prompt,/same_slot_1h_ratio/);
+ assert.match(prompt,/same_slot_24h_ratio/);
+ assert.equal(e.raw.prepare('SELECT COUNT(*) n FROM jobs WHERE id LIKE ?').get(date+'/%').n,5);
 });
 test('budget and disabled flags prevent billable calls',async t=>{
  const e=env();let calls=0;t.mock.method(globalThis,'fetch',async()=>{calls++;return llm();});

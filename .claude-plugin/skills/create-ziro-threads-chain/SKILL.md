@@ -1,9 +1,11 @@
 ---
 name: create-ziro-threads-chain
-description: 復縁アドバイザー・ジローのThreads投稿を、親投稿、追いコメント①、追いコメント②、最終コメントの4部構成で一貫して作成・改善する。読者の状況から男性心理、NG行動、変化、CTAまで設計し、各区切りを自然に回収して品質チェックに合格した完全版チェーンが必要なときに使う。
+description: 旧式の4部構成を明示的に依頼されたときに限り、ジローのThreads親投稿、追いコメント①、②、最終コメントを作る。現行の自動投稿3部構成とPDCAには jiro-threads-v2-pdca を使う。
 ---
 
 # ジローのThreads完全版チェーンを作る
+
+**適用範囲:** このスキルは旧式の4部チェーン専用。現行の1日5組・親＋子①＋子②の自動投稿や数値改善には [../jiro-threads-v2-pdca/SKILL.md](../jiro-threads-v2-pdca/SKILL.md) を使う。以下の40〜90文字の親投稿や最終コメントは現行運用に持ち込まない。
 
 既存の各作成スキルを順番に使い、一つの設計情報を最後まで共有する。個別スキルのルールを複製せず、このスキルは工程、接続、品質ゲートを統括する。
 
@@ -22,7 +24,7 @@ description: 復縁アドバイザー・ジローのThreads投稿を、親投稿
 - 新しいThreads投稿チェーンをゼロから作る
 - 4パーツを一つの流れとして作り直す
 - 既存チェーンの話題の飛びや区切りを修正する
-- 自動投稿用に公開可能な完成稿を作る
+- 旧4部構成として依頼された完成稿を作る
 - 個別スキルのルールを統合して最終確認する
 
 親投稿だけなら [../write-threads-parent-post/SKILL.md](../write-threads-parent-post/SKILL.md)、①だけなら [../write-threads-reply-one/SKILL.md](../write-threads-reply-one/SKILL.md)、②だけなら [../write-threads-reply-two/SKILL.md](../write-threads-reply-two/SKILL.md)、最終だけなら [../write-threads-final-reply/SKILL.md](../write-threads-final-reply/SKILL.md) を使う。検査だけなら [../check-threads-reply-chain/SKILL.md](../check-threads-reply-chain/SKILL.md) を使う。
