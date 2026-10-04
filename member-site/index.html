@@ -211,7 +211,7 @@
 
       // プロフィール確認・なければ作成
       const { data: profile } = await sb.from('profiles')
-        .select('name, enrollment_date')
+        .select('name, enrollment_date, full_name')
         .eq('id', data.user.id)
         .single();
 
@@ -223,6 +223,8 @@
           enrollment_date: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })()
         });
         window.location.href = 'onboarding.html';
+      } else if (email === '129@lily-member.app' && !profile.full_name) {
+        window.location.href = 'member-profile.html';
       } else if (!profile.name) {
         window.location.href = 'onboarding.html';
       } else {

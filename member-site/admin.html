@@ -782,7 +782,7 @@
 
         return `
           <tr>
-            <td>${p.name ? esc(p.name) : '<span class="no-data">未設定</span>'}</td>
+            <td>${p.name ? esc(p.name) : '<span class="no-data">未設定</span>'}${p.full_name ? `<div style="font-size:11px;color:#888">本名：${esc(p.full_name)}</div>` : ''}</td>
             <td>${p.goal ? `<span class="goal-tag ${GOAL_CLASSES[p.goal]}">${esc(GOAL_LABELS[p.goal])}</span>` : '<span class="no-data">未設定</span>'}</td>
             <td style="color:#aaa">${esc(regDate)}</td>
             <td style="font-weight:700;color:#e95f5f">${checkinCount}回</td>
