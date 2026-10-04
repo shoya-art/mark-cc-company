@@ -118,11 +118,15 @@
       <div class="screen-icon">👋</div>
       <div class="screen-title">ようこそ、リリーへ</div>
       <div class="screen-body">
-        あなたのことを呼ぶための<br>お名前（ニックネームでOK）を教えてください
+        サイトに表示するニックネームと、<br>会員情報の確認に使う本名を教えてください
       </div>
       <div class="name-field">
-        <label>ニックネーム</label>
-        <input type="text" id="name-input" placeholder="例：あかり" maxlength="20">
+        <label for="name-input">サイトに表示するニックネーム</label>
+        <input type="text" id="name-input" placeholder="例：あかり" maxlength="20" autocomplete="nickname">
+      </div>
+      <div class="name-field">
+        <label for="full-name-input">本名（管理側での確認用）</label>
+        <input type="text" id="full-name-input" placeholder="例：山田 花子" maxlength="80" autocomplete="name">
       </div>
       <button class="btn" id="name-btn" onclick="nextStep()">次へ</button>
     </div>
@@ -217,8 +221,13 @@
     function nextStep() {
       if (currentStep === 0) {
         const name = document.getElementById('name-input').value.trim();
+        const fullName = document.getElementById('full-name-input').value.trim();
         if (!name) {
           document.getElementById('name-input').focus();
+          return;
+        }
+        if (!fullName) {
+          document.getElementById('full-name-input').focus();
           return;
         }
       }
@@ -230,7 +239,9 @@
 
     async function saveProfile() {
       const name = document.getElementById('name-input').value.trim();
+      const fullName = document.getElementById('full-name-input').value.trim();
       if (!name) { document.getElementById('name-input').focus(); return; }
+      if (!fullName) { document.getElementById('full-name-input').focus(); return; }
       const btn = document.getElementById('start-btn');
       btn.disabled = true;
       btn.textContent = '保存中...';
@@ -243,6 +254,7 @@
         email: user.email,
         goal: 'reconnect',
         name: name,
+        full_name: fullName,
         enrollment_date: existing?.enrollment_date || today
       }, { onConflict: 'id' });
 
