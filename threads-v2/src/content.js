@@ -2,6 +2,14 @@ export const LINE_URL = 'https://lin.ee/sPZRcjg';
 export const FIXED_CTA = `こちらから相談できます↓
 ${LINE_URL}`;
 export const HOURS = [6, 7, 20, 21, 22];
+export const DISCOVERY_RULES = `先に書かれた「1日5組・すべて3部」という指示は上書きする。既存5枠のうち3枠は従来の親・子①・子②、2枠は認知・会話型の独立した短文1件にする。親・子①・子②の細かな書式規則はchainにだけ適用する。
+認知型は「一言の本音」「答えたくなる問い」「日常の一場面」「意外な見方」を試す。
+本人が書いたような具体的な生活感を優先し、毎回同じ導入・語尾・改行にしない。
+認知型の本文にLINEリンクや相談CTAは入れない。3部投稿の固定LINE CTAは維持する。
+認知型のbodyは500字以内。彼の本心や復縁結果、実績を断定・捏造しない。hook_typeの先頭には「認知:」を付け、chainには「3部:」を付ける。
+参考投稿の文言や画像をコピーしない。画像URLはAIに生成させない。
+各投稿にはkindをchainまたはawarenessで付ける。chainのbodyは空文字、awarenessのparent/details/ctaは空文字。
+予約順に指定されたkindを守る。`;
 export const RULES = `あなたは復縁アドバイザー・ジローのThreads編集者。
 対象は将来を考えていた彼を失い、周囲の結婚に焦りながら復縁を望むアラサー女性。
 入口で結婚・出産・年齢の不安を煽らず、まず復縁の悩みを扱う。
@@ -62,6 +70,36 @@ export function validateBatch(value) {
  if (!Array.isArray(value?.posts) || value.posts.length !== 5) throw new Error('batch_count');
  value.posts.forEach(validateChain);
  if (new Set(value.posts.map(p => p.parent.replace(/\s/g, ''))).size !== 5) throw new Error('duplicate_hook');
+ return value.posts;
+}
+
+export function validateAwareness(post) {
+ if (!post || post.kind!=='awareness' || typeof post.body!=='string' || typeof post.hook_type!=='string') throw new Error('invalid_awareness');
+ const body=post.body.trim();
+ if (!body || !post.hook_type.trim() || [...body].length>500) throw new Error('awareness_length');
+ if (/(https?:\/\/|lin\.ee|こちらから相談|必ず復縁|絶対に復縁(?:でき|する)|復縁できます|100%)/i.test(body)) throw new Error('awareness_link_or_claim');
+ if ([...body].some(c=>c==='\u0000')) throw new Error('awareness_control');
+ return [body];
+}
+
+export function validatePost(post) {
+ return post?.kind==='awareness' ? validateAwareness(post) : validateChain(post);
+}
+
+export function discoverySlots(date) {
+ const offset=Number(date.slice(-2))%5;
+ return [offset,(offset+2)%5];
+}
+
+export function validateMixedBatch(value,date) {
+ if (!Array.isArray(value?.posts) || value.posts.length!==5) throw new Error('batch_count');
+ const slots=discoverySlots(date);
+ value.posts.forEach((post,i)=>{
+  if (slots.includes(i)) validateAwareness(post);
+  else if (post?.kind==='chain') validateChain(post);
+  else throw new Error('expected_chain');
+ });
+ if (new Set(value.posts.map(p=>(p.kind==='awareness'?p.body:p.parent).replace(/\s/g,''))).size!==5) throw new Error('duplicate_hook');
  return value.posts;
 }
 

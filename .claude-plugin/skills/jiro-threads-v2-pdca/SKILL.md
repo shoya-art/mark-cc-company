@@ -5,7 +5,7 @@ description: ジローのThreads運用を、既存の親＋子①＋子②と追
 
 # ジローのThreads投稿とPDCA
 
-現行の親＋子①＋子②は残す。その上で、認知を広げ、いいね・返信・再投稿を生む別の投稿形式を検証する。既存の3部投稿の実装の正本は `threads-v2/src/content.js` の `RULES` と `validateChain`、予約・計測の正本は `threads-v2/src/worker.js`。**現行のWorkerは5枠すべて3部構成・固定LINE CTA・テキストのみ**なので、このスキルの更新だけで別形式や画像投稿は稼働しない。公開や予約の操作は、その都度依頼された範囲で行う。
+現行の親＋子①＋子②は残す。その上で、認知を広げ、いいね・返信・再投稿を生む別の投稿形式を検証する。認知・会話型の本文にはLINEリンクを入れず、3部投稿の子②には固定LINE CTAを残す。実装の正本は `threads-v2/src/content.js` の `RULES`、`DISCOVERY_RULES` と検証関数、予約・計測の正本は `threads-v2/src/worker.js`。ローカルのWorkerは3部投稿3枠＋認知型2枠のテキスト投稿に対応したが、画像投稿と返信数の自動計測は未実装。本番反映は別途確認する。公開や予約の操作は、その都度依頼された範囲で行う。
 
 認知・会話型の設計と画像の扱いは、必要時に [references/discovery-experiments.md](references/discovery-experiments.md) を読む。
 

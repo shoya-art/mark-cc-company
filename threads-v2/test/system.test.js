@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
-import {LINE_URL,FIXED_CTA,normalizeBatch,validateChain,validateBatch,schedule,dueWindows,jstDate,compare,cost} from '../src/content.js';
+import {LINE_URL,FIXED_CTA,normalizeBatch,validateChain,validateBatch,validateAwareness,validateMixedBatch,discoverySlots,schedule,dueWindows,jstDate,compare,cost} from '../src/content.js';
 import worker,{ai,bootstrap,prepare,publish,tick,tokenMaintenance,dashboardData} from '../src/worker.js';
 import {dashboardHTML} from '../src/dashboard.js';
 
@@ -25,6 +25,30 @@ function env() {
 }
 const response=data=>new Response(JSON.stringify(data),{status:200});
 function llm(posts=Array.from({length:5},(_,i)=>chain(i))) { return response({status:'completed',usage:{input_tokens:2000,output_tokens:3000},output:[{content:[{type:'output_text',text:JSON.stringify({posts})}]}]}); }
+
+function mixed(date='2026-10-12') {
+ const slots=discoverySlots(date);
+ return Array.from({length:5},(_,i)=>slots.includes(i)
+  ? {kind:'awareness',parent:'',details:'',cta:'',body:'別れた彼に、もう一度だけ「おはよう」と言いたい日がある。'+i,hook_type:'一言の本音'}
+  : {...chain(i),kind:'chain',body:''});
+}
+
+test('mixed batch preserves three LINE chains and two link-free awareness posts',()=>{
+ const posts=validateMixedBatch({posts:mixed()},'2026-10-12');
+ assert.equal(posts.filter(p=>p.kind==='awareness').length,2);
+ assert.equal(posts.filter(p=>p.kind==='chain').length,3);
+ assert.ok(posts.filter(p=>p.kind==='awareness').every(p=>!validateAwareness(p)[0].includes(LINE_URL)));
+ assert.throws(()=>validateAwareness({...mixed()[2],kind:'awareness',body:'こちらから相談できます↓\n'+LINE_URL}));
+ assert.throws(()=>validateMixedBatch({posts:Array.from({length:5},(_,i)=>({...chain(i),kind:'chain',body:''}))},'2026-10-12'));
+});
+
+test('discovery preparation queues two standalone posts and three chains',async t=>{
+ const e=env();e.DISCOVERY_MODE='true';const date='2026-10-12';
+ t.mock.method(globalThis,'fetch',async()=>llm(mixed(date)));
+ await prepare(e,date);
+ const rows=e.raw.prepare('SELECT payload FROM jobs ORDER BY scheduled_at').all().map(r=>JSON.parse(r.payload));
+ assert.equal(rows.length,5);assert.equal(rows.filter(r=>r.kind==='awareness').length,2);
+});
 
 test('content has three parts, one fixed LINE CTA and mandatory blank line',()=>{
  const texts=validateChain(chain()); assert.equal(texts.length,3);assert.ok(texts[2].endsWith(FIXED_CTA));
@@ -120,6 +144,25 @@ test('published chain is linked, persisted, and not duplicated',async t=>{
  e.raw.prepare('INSERT INTO jobs(id,scheduled_at,payload,updated_at) VALUES (?,?,?,?)').run('2026-09-25/6',now.toISOString(),JSON.stringify(chain()),now.toISOString());
  e.ENABLE_PUBLISH='true';await publish(e,now);await publish(e,now);
  assert.equal(published,3);assert.deepEqual(replies,[null,'p1','p2']);assert.equal(e.raw.prepare('SELECT status FROM jobs').get().status,'published');
+});
+test('awareness post publishes once without LINE URL or reply chain',async t=>{
+ const e=env();let published=0;const bodies=[];
+ t.mock.method(globalThis,'setTimeout',(fn)=>{fn();return 0;});
+ t.mock.method(globalThis,'fetch',async(url,options)=>{
+  if(String(url).includes('/me?'))return response({id:'123'});
+  if(String(url).endsWith('/threads_publish')){published++;return response({id:'awareness-1'});}
+  bodies.push(options.body);return response({id:'container-1'});
+ });
+ await bootstrap(e);const now=new Date();e.ENABLE_PUBLISH='true';
+ const post=mixed()[2];
+ e.raw.prepare('INSERT INTO jobs(id,scheduled_at,payload,updated_at) VALUES (?,?,?,?)').run('2026-10-12/6',now.toISOString(),JSON.stringify(post),now.toISOString());
+ await publish(e,now);await publish(e,now);
+ assert.equal(published,1);assert.equal(bodies.length,1);
+ assert.equal(bodies[0].get('reply_to_id'),null);
+ assert.equal(bodies[0].get('media_type'),'TEXT');
+ assert.equal(bodies[0].get('text'),post.body);
+ assert.ok(!bodies[0].get('text').includes(LINE_URL));
+ assert.equal(e.raw.prepare('SELECT status,part FROM jobs').get().status,'published');
 });
 test('ambiguous publish stops for review and never retries',async t=>{
  const e=env();let attempts=0;
