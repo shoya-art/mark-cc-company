@@ -162,8 +162,9 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="auth-resilience.js?v=20261015"></script>
   <script>
-    const { createClient } = window.supabase;
+    const { createClient } = window.MemberAuth;
     const sb = createClient(
       'https://ejcajjtptbrcwmgzqhjz.supabase.co',
       'sb_publishable_LF8EU4bFZpegd6wZPXGynQ_j_nkEGdP'
@@ -185,7 +186,7 @@
       el.style.display = 'block';
     }
 
-    async function handleLogin() {
+    const handleLogin = MemberAuth.singleFlight(async function () {
       const memberId = document.getElementById('member-id').value.trim();
       const password = document.getElementById('password').value;
       const btn = document.getElementById('submit-btn');
@@ -199,48 +200,26 @@
       btn.textContent = 'ログイン中...';
       document.getElementById('error-msg').style.display = 'none';
 
-      const email = buildEmail(memberId);
-      const { data, error } = await sb.auth.signInWithPassword({ email, password });
-
-      if (error) {
-        showError('IDまたはパスワードが正しくありません');
+      try {
+        window.location.href = await MemberAuth.login(sb, buildEmail(memberId), password);
+      } catch (error) {
+        showError(MemberAuth.message(error));
+        if (MemberAuth.kind(error) !== 'credentials') {
+          btn.textContent = '30秒後に再試行できます';
+          await new Promise(resolve => setTimeout(resolve, 30000));
+        }
+      } finally {
         btn.disabled = false;
         btn.textContent = 'ログインする';
-        return;
       }
-
-      // プロフィール確認・なければ作成
-      const { data: profile } = await sb.from('profiles')
-        .select('name, enrollment_date, full_name')
-        .eq('id', data.user.id)
-        .single();
-
-      if (!profile) {
-        // 初回ログイン：プロフィール作成
-        await sb.from('profiles').insert({
-          id: data.user.id,
-          email: email,
-          enrollment_date: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })()
-        });
-        window.location.href = 'onboarding.html';
-      } else if (email === '129@lily-member.app' && !profile.full_name) {
-        window.location.href = 'member-profile.html';
-      } else if (!profile.name) {
-        window.location.href = 'onboarding.html';
-      } else {
-        window.location.href = 'dashboard.html';
-      }
-    }
+    });
 
     // Enterキー送信
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') handleLogin();
     });
 
-    // ページを開いたら必ずログアウト（毎回ログインを強制）
-    (async () => {
-      await sb.auth.signOut();
-    })();
+    // ログアウトは本人がログアウトボタンを押した時だけ行う。
   </script>
 </body>
 </html>

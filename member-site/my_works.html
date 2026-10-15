@@ -216,9 +216,10 @@
 
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="auth-resilience.js?v=20261015"></script>
   <script src="lectures-data.js"></script>
   <script>
-    const { createClient } = window.supabase;
+    const { createClient } = window.MemberAuth;
     const sb = createClient(
       'https://ejcajjtptbrcwmgzqhjz.supabase.co',
       'sb_publishable_LF8EU4bFZpegd6wZPXGynQ_j_nkEGdP'
@@ -413,8 +414,8 @@
     }
 
     (async () => {
-      const { data: { user } } = await sb.auth.getUser();
-      if (!user) { window.location.href = 'index.html'; return; }
+      const user = await MemberAuth.requireUser(sb);
+      if (!user) return;
 
       const { data: answers } = await sb.from('work_answers')
         .select('lecture_id, answer, updated_at').eq('user_id', user.id);

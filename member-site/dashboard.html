@@ -342,9 +342,10 @@
 
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="auth-resilience.js?v=20261015"></script>
   <script src="lectures-data.js"></script>
   <script>
-    const { createClient } = window.supabase;
+    const { createClient } = window.MemberAuth;
     const sb = createClient(
       'https://ejcajjtptbrcwmgzqhjz.supabase.co',
       'sb_publishable_LF8EU4bFZpegd6wZPXGynQ_j_nkEGdP'
@@ -398,14 +399,16 @@
     }
 
     (async () => {
-      const { data: { user } } = await sb.auth.getUser();
-      if (!user) { window.location.href = 'index.html'; return; }
+      const user = await MemberAuth.requireUser(sb);
+      if (!user) return;
 
       if (user.email === ADMIN_EMAIL) {
         document.getElementById('admin-link').style.display = 'inline';
       }
 
-      const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
+      let profile;
+      try { profile = await MemberAuth.profileFor(sb, user.id, '*'); }
+      catch (error) { MemberAuth.showUnavailable(error); return; }
       if (!profile || !profile.name) { window.location.href = 'onboarding.html'; return; }
       if (user.email === '129@lily-member.app' && !profile.full_name) {
         window.location.href = 'member-profile.html';
