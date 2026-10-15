@@ -36,8 +36,9 @@
     </form>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="auth-resilience.js?v=20261015"></script>
   <script>
-    const { createClient } = window.supabase;
+    const { createClient } = window.MemberAuth;
     const sb = createClient('https://ejcajjtptbrcwmgzqhjz.supabase.co', 'sb_publishable_LF8EU4bFZpegd6wZPXGynQ_j_nkEGdP');
     let memberId = null;
     const form = document.getElementById('profile-form');
@@ -45,12 +46,12 @@
     const button = document.getElementById('save-btn');
 
     (async () => {
-      const { data: { user } } = await sb.auth.getUser();
-      if (!user) { window.location.replace('index.html'); return; }
+      const user = await MemberAuth.requireUser(sb);
+      if (!user) return;
       if (user.email !== '129@lily-member.app') { window.location.replace('dashboard.html'); return; }
       memberId = user.id;
       const { data: profile, error } = await sb.from('profiles').select('full_name').eq('id', memberId).single();
-      if (error || !profile) { message.textContent = '会員情報を読み込めませんでした。再度ログインしてください。'; return; }
+      if (error || !profile) { MemberAuth.showUnavailable(error); return; }
       if (profile.full_name) window.location.replace('dashboard.html');
     })();
 
@@ -62,7 +63,8 @@
       if (!nickname || !fullName) { message.textContent = 'ニックネームと本名を入力してください。'; return; }
       button.disabled = true;
       message.textContent = '';
-      const { data: { user } } = await sb.auth.getUser();
+      const user = await MemberAuth.requireUser(sb);
+      if (!user) return;
       if (!user || user.id !== memberId || user.email !== '129@lily-member.app') {
         window.location.replace('index.html');
         return;

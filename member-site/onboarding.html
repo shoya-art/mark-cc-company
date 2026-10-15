@@ -187,8 +187,9 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="auth-resilience.js?v=20261015"></script>
   <script>
-    const { createClient } = window.supabase;
+    const { createClient } = window.MemberAuth;
     const sb = createClient(
       'https://ejcajjtptbrcwmgzqhjz.supabase.co',
       'sb_publishable_LF8EU4bFZpegd6wZPXGynQ_j_nkEGdP'
@@ -200,10 +201,12 @@
 
     // 認証チェック
     (async () => {
-      const { data: { user } } = await sb.auth.getUser();
-      if (!user) { window.location.href = 'index.html'; return; }
+      const user = await MemberAuth.requireUser(sb);
+      if (!user) return;
       userId = user.id;
-      const { data: profile } = await sb.from('profiles').select('name').eq('id', user.id).single();
+      let profile;
+      try { profile = await MemberAuth.profileFor(sb, user.id, 'name'); }
+      catch (error) { MemberAuth.showUnavailable(error); return; }
       if (profile && profile.name) { window.location.href = 'dashboard.html'; return; }
       renderDots();
     })();
@@ -237,7 +240,7 @@
       renderDots();
     }
 
-    async function saveProfile() {
+    const saveProfile = MemberAuth.singleFlight(async function () {
       const name = document.getElementById('name-input').value.trim();
       const fullName = document.getElementById('full-name-input').value.trim();
       if (!name) { document.getElementById('name-input').focus(); return; }
@@ -246,26 +249,38 @@
       btn.disabled = true;
       btn.textContent = '保存中...';
 
-      const { data: { user } } = await sb.auth.getUser();
+      try {
+      const user = await MemberAuth.requireUser(sb);
+      if (!user) return;
+      if (userId && user.id !== userId) { MemberAuth.showUnavailable(); return; }
+      userId = user.id;
       const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
-      const { data: existing } = await sb.from('profiles').select('enrollment_date').eq('id', userId).single();
-      const { error } = await sb.from('profiles').upsert({
+      const existing = await MemberAuth.profileFor(sb, userId, 'name,enrollment_date');
+      if (existing?.name) { window.location.href = 'dashboard.html'; return; }
+      const values = {
         id: userId,
         email: user.email,
         goal: 'reconnect',
         name: name,
         full_name: fullName,
         enrollment_date: existing?.enrollment_date || today
-      }, { onConflict: 'id' });
-
-      if (error) {
-        alert('保存に失敗しました。\nエラー: ' + error.message + '\nコード: ' + error.code);
-        btn.disabled = false;
-        btn.textContent = 'はじめる';
-        return;
+      };
+      // 初回作成と既存行の更新を分離。読み取り失敗で入会日を上書きしない。
+      let update;
+      if (existing) {
+        update = sb.from('profiles').update(values).eq('id', userId);
+        update = existing.name === null ? update.is('name', null) : update.eq('name', existing.name);
       }
+      const { data: saved, error } = existing
+        ? await update.select('id').maybeSingle()
+        : await sb.from('profiles').insert(values).select('id').single();
+
+      if (error) throw error;
+      if (!saved) throw new Error('Profile changed. Reload required.');
       window.location.href = 'dashboard.html';
-    }
+      } catch (error) { MemberAuth.showUnavailable(error); }
+      finally { btn.disabled = false; btn.textContent = 'はじめる'; }
+    });
   </script>
 </body>
 </html>
