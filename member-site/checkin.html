@@ -258,7 +258,7 @@
     <div class="date-badge" id="date-badge"></div>
 
     <div class="already-done" id="already-done-msg">
-      <p>✅ 今日はすでにチェックイン済みです</p>
+      <p>✅ 今日の記録です。同じ日は編集でき、翌日は新しく記録できます。</p>
     </div>
 
     <!-- 感情タグ -->
@@ -359,7 +359,8 @@
       <textarea id="note" rows="3" placeholder="例：今日は元彼のことを思い出したけど、講義を見て少し楽になった。"></textarea>
     </div>
 
-    <button class="btn" id="submit-btn" onclick="submitCheckin()">チェックインする ✨</button>
+    <p id="checkin-status" role="status" style="font-size:13px;line-height:1.8;color:#999">日本時間で毎日1件記録できます。確認中...</p>
+    <button class="btn" id="submit-btn" onclick="submitCheckin()" disabled>確認中...</button>
   </div>
 
   <div class="done-screen" id="done-screen">
@@ -375,6 +376,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="auth-resilience.js?v=20261015"></script>
+  <script src="daily-checkin.js?v=20261018"></script>
   <script>
     const { createClient } = window.MemberAuth;
     const sb = createClient(
@@ -384,6 +386,8 @@
 
     let userId = null;
     let alreadyDone = false;
+    let loadedDate = null;
+    let saving = false;
     const scores = { mood: null, action: null, state: null };
     const selectedTags = new Set();
 
@@ -406,10 +410,7 @@
     }
 
     function getDateStr(d) {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${y}-${m}-${day}`;
+      return DailyCheckin.dayKey(d);
     }
 
     (async () => {
@@ -418,13 +419,14 @@
       userId = user.id;
 
       const today = new Date();
-      const dayOfWeek = ['日','月','火','水','木','金','土'][today.getDay()];
       document.getElementById('date-badge').textContent =
-        `${today.getMonth()+1}月${today.getDate()}日（${dayOfWeek}）`;
+        today.toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', month: 'long', day: 'numeric', weekday: 'long' });
 
       const todayStr = getDateStr(today);
-      const { data: existing } = await sb.from('checkins')
-        .select('*').eq('user_id', userId).eq('date', todayStr).single();
+      let existing;
+      try { existing = await DailyCheckin.loadToday(sb, userId, todayStr); }
+      catch (error) { MemberAuth.showUnavailable(error); return; }
+      loadedDate = todayStr;
 
       if (existing) {
         alreadyDone = true;
@@ -445,21 +447,39 @@
         }
         document.getElementById('submit-btn').textContent = '更新する ✨';
       }
+      document.getElementById('submit-btn').disabled = false;
+      if (!existing) document.getElementById('submit-btn').textContent = 'チェックインする ✨';
+      document.getElementById('checkin-status').textContent = '毎朝の気分・行動・前向きさを記録しましょう。日本時間で1日1件、当日は編集できます。';
+      DailyCheckin.onNewDay(() => {
+        document.getElementById('checkin-status').textContent = '日付が変わりました。再読み込みして今日の状態を入力してください（入力中の内容は自動保存されません）。';
+        document.getElementById('submit-btn').disabled = true;
+        document.getElementById('submit-btn').textContent = '再読み込みして今日の記録へ';
+        document.getElementById('submit-btn').onclick = () => window.location.reload();
+        document.getElementById('submit-btn').disabled = false;
+        document.getElementById('form-content').style.display = 'block';
+        document.getElementById('done-screen').style.display = 'none';
+      });
     })();
 
     async function submitCheckin() {
+      if (saving || !userId || !loadedDate) return;
+      if (loadedDate !== DailyCheckin.dayKey()) {
+        alert('日付が変わりました。再読み込みして今日の状態を入力してください。');
+        return;
+      }
       if (!scores.mood || !scores.action || !scores.state) {
         alert('スコアをすべて選んでください（気分・行動・前向きさ）');
         return;
       }
       const btn = document.getElementById('submit-btn');
+      saving = true;
       btn.disabled = true;
       btn.textContent = '送信中...';
 
       const today = new Date();
       const record = {
         user_id: userId,
-        date: getDateStr(today),
+        date: loadedDate,
         mood: scores.mood,
         action: scores.action,
         state: scores.state,
@@ -467,18 +487,18 @@
         note: document.getElementById('note').value.trim() || null
       };
 
-      const { error } = alreadyDone
-        ? await sb.from('checkins').update({ mood: record.mood, action: record.action, state: record.state, tags: record.tags, note: record.note })
-            .eq('user_id', userId).eq('date', record.date)
-        : await sb.from('checkins').insert(record);
-
-      if (error) {
-        alert('送信に失敗しました。もう一度お試しください。');
+      try {
+        await DailyCheckin.save(sb, record);
+      } catch (error) {
+        document.getElementById('checkin-status').textContent = '保存を確認できませんでした。入力は残っています。少し時間をおいて再試行してください。';
+        saving = false;
         btn.disabled = false;
         btn.textContent = alreadyDone ? '更新する ✨' : 'チェックインする ✨';
         return;
       }
 
+      alreadyDone = true;
+      saving = false;
       document.getElementById('form-content').style.display = 'none';
       document.getElementById('done-screen').style.display = 'block';
     }

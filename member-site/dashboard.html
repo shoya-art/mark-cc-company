@@ -239,6 +239,17 @@
       <div class="welcome-msg" id="welcome-msg"></div>
     </div>
 
+    <a class="cta-card" href="checkin.html" style="display:block;margin-bottom:14px" id="daily-checkin-card">
+      <div class="cta-title" id="daily-checkin-title">今日のチェックイン</div>
+      <div class="cta-sub" id="daily-checkin-sub">毎朝の気分・行動・前向きさを記録しよう（毎日できます）</div>
+    </a>
+    <dialog id="daily-checkin-prompt" style="margin:auto;border:0;border-radius:20px;padding:24px;width:calc(100% - 40px);max-width:400px;color:#555;font:inherit">
+      <h2 style="font-size:20px;margin-bottom:12px">今日の調子はいかがですか？</h2>
+      <p style="font-size:14px;line-height:1.8;margin-bottom:18px">今日のチェックインはまだです。気分・行動・前向きさを記録して、日々の変化を残しましょう。</p>
+      <a class="cta-card" href="checkin.html" style="display:block">今日のチェックインをする →</a>
+      <form method="dialog"><button style="margin-top:16px;padding:10px;border:0;background:#fff;color:#777;font:inherit">あとで記録する</button></form>
+    </dialog>
+
     <!-- Stats -->
     <div class="stats-row">
       <div class="stat-card">
@@ -343,6 +354,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="auth-resilience.js?v=20261015"></script>
+  <script src="daily-checkin.js?v=20261018"></script>
   <script src="lectures-data.js"></script>
   <script>
     const { createClient } = window.MemberAuth;
@@ -378,10 +390,7 @@
     ];
 
     function getDateStr(d) {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${y}-${m}-${day}`;
+      return DailyCheckin.dayKey(d);
     }
 
     async function logout() {
@@ -420,7 +429,7 @@
       const today = new Date();
       const days = ['日','月','火','水','木','金','土'];
       document.getElementById('date-text').textContent =
-        `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日（${days[today.getDay()]}）`;
+        today.toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
       document.getElementById('welcome-name').textContent = `${name}さん、こんにちは`;
       document.getElementById('welcome-msg').textContent = MESSAGES[today.getDate() % MESSAGES.length];
 
@@ -441,6 +450,7 @@
           .order('date', { ascending: true }).limit(12)
       ]);
 
+      if (checkinsRes.error) { MemberAuth.showUnavailable(checkinsRes.error); return; }
       const checkins = checkinsRes.data || [];
       const viewedSet = new Set((viewsRes.data || []).map(v => v.lecture_id));
       const workSet = new Set((worksRes.data || []).map(w => w.lecture_id));
@@ -450,6 +460,13 @@
       document.getElementById('total-val').textContent = checkins.length;
 
       const todayCheckin = checkins.find(c => c.date === todayStr);
+      if (todayCheckin) {
+        document.getElementById('daily-checkin-title').textContent = '今日のチェックイン記録済み ✓（確認・編集）';
+        document.getElementById('daily-checkin-sub').textContent = `気分 ${todayCheckin.mood} ／ 行動 ${todayCheckin.action} ／ 前向きさ ${todayCheckin.state} — 翌日は新しく記録できます`;
+      }
+      if (user.email !== ADMIN_EMAIL) DailyCheckin.showPrompt(user.id, todayStr, todayCheckin);
+      DailyCheckin.onNewDay(() => window.location.reload());
+      window.addEventListener('pageshow', event => { if (event.persisted) window.location.reload(); });
       if (todayReportRes.data) {
         document.getElementById('diary-main-label').textContent = '幸せ日記を書く ✓';
         document.getElementById('diary-main-sub').textContent = '今日は記録済みです';
@@ -458,19 +475,17 @@
       // ストリーク
       let streak = 0;
       if (checkins.length > 0) {
-        const checkDate = new Date(today);
-        if (!todayCheckin) checkDate.setDate(checkDate.getDate() - 1);
+        let checkDate = todayCheckin ? todayStr : DailyCheckin.shiftDay(todayStr, -1);
         for (const c of [...checkins].sort((a, b) => b.date.localeCompare(a.date))) {
-          if (c.date === getDateStr(checkDate)) { streak++; checkDate.setDate(checkDate.getDate() - 1); }
+          if (c.date > todayStr) continue;
+          if (c.date === checkDate) { streak++; checkDate = DailyCheckin.shiftDay(checkDate, -1); }
           else break;
         }
       }
       document.getElementById('streak-val').textContent = streak;
 
       // 週平均
-      const weekAgo = new Date(today);
-      weekAgo.setDate(weekAgo.getDate() - 6);
-      const weekCheckins = checkins.filter(c => c.date >= getDateStr(weekAgo));
+      const weekCheckins = checkins.filter(c => c.date >= DailyCheckin.shiftDay(todayStr, -6) && c.date <= todayStr);
       if (weekCheckins.length > 0) {
         const avg = weekCheckins.reduce((s, c) => s + (c.mood + c.action + c.state) / 3, 0) / weekCheckins.length;
         document.getElementById('avg-val').textContent = avg.toFixed(1);
@@ -540,9 +555,9 @@
       // チェックインスコアグラフ（7日間）
       const chartLabels = [], scoreData = [];
       for (let i = 6; i >= 0; i--) {
-        const d = new Date(today); d.setDate(d.getDate() - i);
-        chartLabels.push(`${d.getMonth()+1}/${d.getDate()}`);
-        const c = checkins.find(x => x.date === getDateStr(d));
+        const date = DailyCheckin.shiftDay(todayStr, -i);
+        chartLabels.push(`${Number(date.slice(5,7))}/${Number(date.slice(8,10))}`);
+        const c = checkins.find(x => x.date === date);
         scoreData.push(c ? +((c.mood + c.action + c.state) / 3).toFixed(1) : null);
       }
       new Chart(document.getElementById('scoreChart').getContext('2d'), {
@@ -554,7 +569,7 @@
             borderColor: '#e95f5f', backgroundColor: 'rgba(233,95,95,0.08)',
             fill: true, tension: .4, pointRadius: 5,
             pointBackgroundColor: '#e95f5f', pointBorderColor: '#fff', pointBorderWidth: 2,
-            spanGaps: true
+            spanGaps: false
           }]
         },
         options: {

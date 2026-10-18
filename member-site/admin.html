@@ -287,7 +287,7 @@
     <div class="section" id="member-feed-section">
       <div class="section-title">会員の記録を一括で見る</div>
       <p style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.65">
-        チェックイン（スライダー＋メモ）・<strong>日報</strong>（<code>daily_reports</code> の本文）・ワーク回答・講義メモ・復縁日記を、全会員分まとめて表示します。
+        チェックイン（直近14日・スコア＋メモ）・<strong>日報</strong>（<code>daily_reports</code> の本文）・ワーク回答・講義メモ・復縁日記を、全会員分まとめて表示します。以前のチェックインは会員の「詳細」で最新30件まで確認できます。
       </p>
       <div class="feed-tabs" id="feed-tabs">
         <button type="button" class="feed-tab active" data-tab="checkin">チェックイン</button>
@@ -326,6 +326,7 @@
 
     <div class="section">
       <div class="section-title">会員一覧</div>
+      <p style="font-size:12px;color:#999;line-height:1.8;margin-bottom:12px">チェックインは日本時間の直近14日を集計。未記録は低スコアと扱いません。平均・差は記録日のみの自己申告値です。詳細で日別の変化を確認できます。</p>
       <div class="table-wrap">
         <table>
           <thead>
@@ -333,10 +334,10 @@
               <th>名前</th>
               <th>ゴール</th>
               <th>登録日</th>
-              <th>チェックイン</th>
+              <th>チェックイン<br>直近14日</th>
               <th>日報</th>
-              <th>最終記録</th>
-              <th>平均</th>
+              <th>最新記録<br>直近14日内</th>
+              <th>今日・最近の変化</th>
               <th></th>
             </tr>
           </thead>
@@ -361,6 +362,7 @@
   <script src="lectures-data.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="auth-resilience.js?v=20261015"></script>
+  <script src="daily-checkin.js?v=20261018"></script>
   <script>
     const { createClient } = window.MemberAuth;
     const sb = createClient(
@@ -585,10 +587,7 @@
     }
 
     function getDateStr(d) {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${y}-${m}-${day}`;
+      return DailyCheckin.dayKey(d);
     }
 
     function closeModal(e) {
@@ -669,19 +668,38 @@
     }
 
     async function showMemberDetail(userId, name) {
+      document.getElementById('modal-body').dataset.memberId = userId;
       document.getElementById('modal-title').textContent = `${name} のチェックイン履歴`;
       document.getElementById('modal-body').innerHTML = '<p style="color:#bbb;text-align:center;padding:20px">読み込み中...</p>';
       document.getElementById('modal').classList.add('open');
 
-      const { data: checkins } = await sb.from('checkins')
-        .select('*').eq('user_id', userId).order('date', { ascending: false }).limit(30);
+      let checkins;
+      try {
+        const result = await sb.from('checkins')
+          .select('*').eq('user_id', userId).order('date', { ascending: false }).limit(30);
+        if (result.error) throw result.error;
+        checkins = result.data;
+      } catch (error) {
+        if (document.getElementById('modal-body').dataset.memberId === userId)
+          document.getElementById('modal-body').textContent = '履歴の読み込みに失敗しました。未記録とは限りません。少し時間をおいて詳細を開き直してください。';
+        return;
+      }
+      if (document.getElementById('modal-body').dataset.memberId !== userId) return;
 
       if (!checkins || checkins.length === 0) {
         document.getElementById('modal-body').innerHTML = '<p style="color:#bbb;text-align:center;padding:20px">チェックインデータがありません</p>';
         return;
       }
 
-      document.getElementById('modal-body').innerHTML = checkins.map(c => `
+      const today = DailyCheckin.dayKey();
+      const dailyRows = Array.from({ length: 14 }, (_, i) => {
+        const date = DailyCheckin.shiftDay(today, -i);
+        const row = checkins.find(c => c.date === date);
+        return `<tr><td>${esc(date)}</td>${row ? `<td>${esc(row.mood)}</td><td>${esc(row.action)}</td><td>${esc(row.state)}</td>` : '<td colspan="3">未記録</td>'}</tr>`;
+      }).join('');
+      document.getElementById('modal-body').innerHTML = `<p style="font-size:13px;line-height:1.8">${esc(DailyCheckin.summaryText(checkins, today))}</p>
+        <div class="table-wrap"><table><caption>直近14日の変化（日本時間・各1〜5）</caption><thead><tr><th>日付</th><th>気分</th><th>行動</th><th>前向きさ</th></tr></thead><tbody>${dailyRows}</tbody></table></div>
+        <p style="font-size:12px;color:#999;margin:12px 0">以下は最新30件の記録・メモです。同日の編集はその日の記録を更新します。</p>` + checkins.map(c => `
         <div class="checkin-item">
           <div class="checkin-date">${esc(c.date)}</div>
           <div class="checkin-scores">
@@ -710,13 +728,14 @@
 
       const [profilesRes, checkinsRes, waRes, diRes, drFullRes, memosAllRes] = await Promise.all([
         sb.from('profiles').select('*').order('created_at', { ascending: false }),
-        sb.from('checkins').select('*').order('date', { ascending: false }).limit(2000),
+        DailyCheckin.loadRecent(sb).catch(error => ({ data: null, error })),
         sb.from('work_answers').select('*').order('updated_at', { ascending: false }).limit(500),
         sb.from('diary_entries').select('*').order('date', { ascending: false }).limit(300),
         sb.from('daily_reports').select('*').order('date', { ascending: false }).limit(800),
         sb.from('question_memos').select('*').order('created_at', { ascending: false }).limit(400),
       ]);
 
+      if (profilesRes.error || checkinsRes.error) { MemberAuth.showUnavailable(profilesRes.error || checkinsRes.error); return; }
       const profiles = profilesRes.data || [];
       const profileMap = {};
       profiles.forEach(p => { profileMap[p.id] = p; });
@@ -731,8 +750,7 @@
 
       const today = new Date();
       const todayStr = getDateStr(today);
-      const weekAgo = new Date(today); weekAgo.setDate(weekAgo.getDate() - 6);
-      const weekAgoStr = getDateStr(weekAgo);
+      const weekAgoStr = DailyCheckin.shiftDay(todayStr, -6);
 
       const todayActive = new Set(allCheckins.filter(c => c.date === todayStr).map(c => c.user_id)).size;
       const weekActive = new Set(allCheckins.filter(c => c.date >= weekAgoStr).map(c => c.user_id)).size;
@@ -775,9 +793,6 @@
         const memberCheckins = allCheckins.filter(c => c.user_id === p.id);
         const checkinCount = memberCheckins.length;
         const lastCheckin = [...memberCheckins].sort((a, b) => String(b.date).localeCompare(String(a.date)))[0];
-        const avgScore = checkinCount > 0
-          ? (memberCheckins.reduce((s, c) => s + (Number(c.mood) + Number(c.action) + Number(c.state)) / 3, 0) / checkinCount).toFixed(1)
-          : '-';
         const regDate = new Date(p.created_at).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
         const reportCount = reportCounts[p.id] || 0;
         const dispName = (p.name || '名前なし').trim();
@@ -790,7 +805,7 @@
             <td style="font-weight:700;color:#e95f5f">${checkinCount}回</td>
             <td style="font-weight:700;color:#5cb87a">${reportCount}回</td>
             <td style="color:#aaa">${lastCheckin ? esc(lastCheckin.date) : '<span class="no-data">なし</span>'}</td>
-            <td style="font-weight:700;color:#e95f5f">${esc(avgScore)}</td>
+            <td style="font-size:12px;min-width:240px;white-space:normal;line-height:1.8">${esc(DailyCheckin.summaryText(memberCheckins, todayStr))}</td>
             <td><button type="button" class="detail-btn" data-detail data-user-id="${escAttr(p.id)}" data-user-name="${escAttr(dispName)}">詳細</button></td>
           </tr>
         `;
